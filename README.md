@@ -7,7 +7,7 @@ Initial progress:
 
 -Most are UI of the editor.
 
--Can create a new map project.
+-Can now create a new map project.
 
 -Can now make tileset from a texture file. 
 
