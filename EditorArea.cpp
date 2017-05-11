@@ -8,15 +8,10 @@
 EditorArea::EditorArea()
 	: tab(TabbedButtonBar::Orientation::TabsAtTop)
 {
-	addAndMakeVisible(tab.get());/*
-	std::vector<ImageComponent> image(10000);
-	Image image = ImageFileFormat::loadFrom(File::getCurrentWorkingDirectory().getChildFile("Asset/test.jpg"));
-	for (int a = 0; a < ; a++)
-	{
-		image[a].setImage(image);
-	}*/
-	tab.addTab("Test 1", new GridTab(Vector2i(100, 100), Vector2i(32, 32)));
-	tab.addTab("Test 2", new GridTab(Vector2i(100, 100), Vector2i(32, 32)));
+	addAndMakeVisible(tab.get());
+
+	tab.addTab("Test 1", new GridTab(Vector2i(100, 100), Vector2i(32, 32), std::bind(&EditorArea::fillNode, this, std::placeholders::_1)));
+	tab.addTab("Test 2", new GridTab(Vector2i(100, 100), Vector2i(32, 32), std::bind(&EditorArea::fillNode, this, std::placeholders::_1)));
 }
 
 EditorArea::~EditorArea()

@@ -16,8 +16,10 @@ public:
 	{
 		addAndMakeVisible(browseFileButton);
 		addAndMakeVisible(tilesetsHolder.get());
-		browseFileButton.setButtonText("browse texture");
-		
+
+		browseFileButton.setButtonText("...");
+		browseFileButton.setTooltip("Add Tileset");
+
 		browseFileButton.addListener(this);
 	}
 
@@ -29,7 +31,9 @@ public:
 	void resized() override
 	{
 		Rectangle<int> thisBounds(getLocalBounds());
-		browseFileButton.setBounds(thisBounds.removeFromBottom(5));
+		Rectangle<int> toolButtonsArea = thisBounds.removeFromBottom(16);
+		int buttonSize = 16;
+		browseFileButton.setBounds(toolButtonsArea.removeFromLeft(buttonSize));
 		tilesetsHolder.get().setBounds(thisBounds);
 		
 	}
@@ -39,9 +43,7 @@ public:
 		if (activeButton == &browseFileButton)
 		{
 			WildcardFileFilter fileFilter("*.jpg, *.png", "TEst", "Texture Image Files");
-
 			FileBrowserComponent fileBrowser(FileBrowserComponent::FileChooserFlags::openMode | FileBrowserComponent::FileChooserFlags::canSelectFiles, File("C:\\Users\\Lorence\\Desktop"), &fileFilter, nullptr);
-
 			FileChooserDialogBox fileBrowserDialog("Selecte your texture file", "select jpeg or png file", fileBrowser, true, Colour(123, 123, 123));
 			
 			if (fileBrowserDialog.show())
@@ -50,31 +52,31 @@ public:
 				{
 					String filePath = fileBrowser.getSelectedFile(0).getFullPathName();
 					OwnedArray<ImageComponent> clippedImages = getClippedImages(filePath, Vector2i(32, 32));
-					tilesetsHolder.addTab("test", new GridTab(Vector2i(25,6), Vector2i(32, 32), std::move(clippedImages)));
+					tilesetsHolder.addTab("test", new GridTab(Vector2i(25, 6), Vector2i(32, 32), std::bind(&ToolsArea::setCurrentSelectedNode,this, std::placeholders::_1), std::move(clippedImages)));
 				}
 			}
-
 		}
+
+	}
+
+	static Image const* const getCurrentSelectedNode()
+	{
+		return currentSelectedNode;
+	}
+    void setCurrentSelectedNode(const ImageComponent& newNode)
+	{
+		myLog("setcurrentselectednode");
+
+		currentSelectedNode = &newNode.getImage();
 	}
 
 private:
-	Image selectedImage;
 
+	static Image const* currentSelectedNode;
 	TabbedComponentWrapper tilesetsHolder;
 	TextButton browseFileButton;
-
-
-
-
-
-
-
-
-
-
-
-
-
+	
+	ImageButton removeTileSetButton;
 
 
 
@@ -83,12 +85,7 @@ private:
 		Image image = ImageFileFormat::loadFrom(File(filepath));
 		int width = image.getWidth() / clipSize.x;
 		int height = image.getHeight() / clipSize.y;
-		//if (width * clipSize.x != image.getWidth()) width++;
-		//if (height * clipSize.y != image.getHeight()) height++;
-		//myLog(height);
-		//myLog(width);
 		OwnedArray<ImageComponent> clippedImage;
-
 		for (int lHeight = 0; lHeight < height; lHeight++)
 		{
 			for (int lWidth = 0; lWidth < width; lWidth++)
@@ -99,11 +96,7 @@ private:
 
 			}
 		}
-
 		return clippedImage;
 	}
-
-
-
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ToolsArea)
 };

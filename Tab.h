@@ -18,6 +18,8 @@ public:
 	{
 
 	}
+
+
 protected:
 	Vector2i tabSize;
 };
@@ -25,10 +27,11 @@ protected:
 class GridTab : public Tab
 {
 public:
-	GridTab(Vector2i tSize, Vector2i nSize,  OwnedArray<ImageComponent> pNodes = OwnedArray<ImageComponent>())
-		: Tab(tSize), nodeSize(nSize)
+	GridTab(Vector2i tSize, Vector2i nSize,  std::function<void(const ImageComponent&)> pCallback, OwnedArray<ImageComponent> pNodes = OwnedArray<ImageComponent>())
+		: Tab(tSize), nodeSize(nSize), callback(pCallback)
 	{
-		if ( !pNodes.isEmpty() )
+
+		if (!pNodes.isEmpty())
 		{
 			nodes = std::move(pNodes);
 		}
@@ -49,7 +52,10 @@ public:
 
 	}
 
-	
+	~GridTab()
+	{
+	}
+
     void resized() override
 	{
 		int x = 0, y = 0;
@@ -59,14 +65,32 @@ public:
 			x += nodeSize.x;
 			if (x >= getWidth())
 			{
-				myLog(std::to_string(x) + " " + std::to_string(y));
 				x = 0;
 				y += nodeSize.y;
 			}
 		}
 	}
 
-private:
+
+	virtual void mouseUp(const MouseEvent& event) override
+	{
+		Vector2i pos = event.getEventRelativeTo(this).getPosition();
+		myLog(std::to_string(pos.x) + std::to_string(pos.y));
+		for (int a = 0; a < nodes.size(); a++)
+		{
+			Rectangle<int> bounds = nodes[a]->getBounds();
+			if (pos.x >= bounds.getX() && pos.y >= bounds.getY() && pos.x <= bounds.getX() + bounds.getWidth() && pos.y <= bounds.getY() + bounds.getHeight())
+			{
+				myLog("mouseClicked");
+				callback(*nodes[a]);
+				return;
+			}
+		}
+	}
+
+protected:
+	std::function<void(const ImageComponent&)> callback;
+	                              
 	OwnedArray<ImageComponent> nodes; 
      //  static const Image defaultNodeImage;
 	static const Image& getDefaultNodeImage()
@@ -75,5 +99,9 @@ private:
 		return defaultNodeImage;
 	}
 	Vector2i nodeSize;
+	
 };
+
+
+
 
