@@ -1,5 +1,5 @@
 # Virusmon-map-editor
-A map editor I'm working on for a game for college project
+A map editor I'm working on for a mobile game for college project
 
 "Virusmon" is an undecided name. 
 
