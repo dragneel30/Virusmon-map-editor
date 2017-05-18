@@ -9,7 +9,11 @@ void myLog(const std::string& str);
 void myLog(int strInteger);
 void myLog(float strFloat);
 
-bool isPOT(int n);
+
+File getAbsolutePath(String relativePath);
+Image getImageFromFile(String relativePath);
+
+int makePOT(int n);
 
 
 

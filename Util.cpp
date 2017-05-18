@@ -16,6 +16,16 @@ void myLog(float strFloat)
 	myLog(std::to_string(strFloat));
 }
 
+File getAbsolutePath(String relativePath)
+{
+	//myLog(File::getCurrentWorkingDirectory().getChildFile(relativePath).getFullPathName().toStdString());
+	return File::getCurrentWorkingDirectory().getChildFile(relativePath);
+}
+
+Image getImageFromFile(String relativePath)
+{
+	return ImageFileFormat::loadFrom(getAbsolutePath(relativePath));
+}
 
 int makePOT(int n)
 {

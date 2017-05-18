@@ -9,7 +9,7 @@
 */
 
 #include "../JuceLibraryCode/JuceHeader.h"
-#include "BaseWindow.h"
+#include "Editor.h"
 
 
 //==============================================================================
@@ -26,16 +26,14 @@ public:
     //==============================================================================
     void initialise (const String& commandLine) override
     {
-        // This method is where you should put your application's initialisation code..
-
-        mainWindow = new MainWindow (getApplicationName());
+		editor = new Editor(getApplicationName(), Vector2i(800,800));
     }
 
     void shutdown() override
     {
         // Add your application's shutdown code here..
 
-        mainWindow = nullptr; // (deletes our window)
+        editor = nullptr; // (deletes our window)
     }
 
     //==============================================================================
@@ -58,7 +56,7 @@ public:
         This class implements the desktop window that contains an instance of
         our MainContentComponent class.
     */
-    class MainWindow    : public DocumentWindow
+    class MainWindow : public DocumentWindow
     {
     public:
         MainWindow (String name)  : DocumentWindow (name,
@@ -66,10 +64,11 @@ public:
                                                                           .findColour (ResizableWindow::backgroundColourId),
                                                     DocumentWindow::allButtons)
         {
+			
 			Vector2i size(800, 600);
 			setSize(size.x, size.y);
 			setUsingNativeTitleBar (0);
-            setContentOwned (new BaseWindow(size), true);
+            //setContentOwned (new BaseWindow(size), true);
 			setResizable(true,true);
             centreWithSize (getWidth(), getHeight());
             setVisible (true);
@@ -93,9 +92,16 @@ public:
     private:
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainWindow)
     };
-
 private:
-    ScopedPointer<MainWindow> mainWindow;
+    ScopedPointer<Editor> editor;
+
+
+
+
+
+
+
+	
 };
 
 //==============================================================================

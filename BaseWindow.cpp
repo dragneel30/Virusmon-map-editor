@@ -3,6 +3,8 @@
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "BaseWindow.h"
 #include <string>
+
+/*
 BaseWindow::BaseWindow(Vector2i size)
 {
 	setSize(size.x, size.y);
@@ -35,3 +37,4 @@ void BaseWindow::resized()
 	
 
 }
+*/
