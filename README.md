@@ -20,3 +20,15 @@ Initial progress: 03/12/17
 New update: 05/12/17
 
 -Can now edit a map.
+
+New update: 05/18/2017 (almost all code has been rewritten)
+
+-Whole UI has been changed
+
+  -Tools, map, properties has now their own separate window
+
+-added tools for editing map
+
+
+   
+     
