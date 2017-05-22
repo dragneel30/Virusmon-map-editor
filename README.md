@@ -29,6 +29,13 @@ New update: 05/18/2017 (almost all code has been rewritten)
 
 -added tools for editing map
 
+-05/22/2017 (2:22pm)
+
+-some code has been refactored for reusability.
+
+
+
+
 
    
      
