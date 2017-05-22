@@ -12,17 +12,100 @@
 
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "Properties.h"
-class Tile : public Component
+#include <string>
+
+
+
+template<typename T>
+class UID
 {
 public:
-    Tile();
-    ~Tile();
+	UID(const T& iid)
+		: id(iid)
+	{
 
-    void paint (Graphics&) override;
-    void resized() override;
+	}
 
+	UID(const UID& iid)
+		: id(iid.getID())
+	{
+
+	}
+	const T& getID() const { return id; }
+	UID& operator+(const T& val)
+	{
+		id += val;
+		return *this;
+	}
+	UID operator++(int)
+	{
+		UID temp = *this;
+		id++;
+		return temp;
+	}
 private:
+	UID& operator=(UID& newID);
+	T id;
+};
+
+typedef UID<int> intUID;
+typedef UID<std::string> strUID;
+
+
+class TileType
+{
+public:
+	TileType(intUID iid, const Image& pImage)
+		: image(pImage), id(iid)
+	{
+		getStrProperties().add("ID", std::to_string(iid.getID()));
+	}
+	TileType(const TileType& other)
+		: TileType(other.getID(), other.getImage())
+	{
+
+	}
+	Properties& getStrProperties() { return strProperties; }
+	const Image& getImage() const { return image; }
+    intUID getID() const { return id; }
+private:
+	intUID id;
+	Image image;
+	Properties strProperties;
+};
+
+class Tile : public ImageComponent
+{
+public:
+	Tile(TileType* type)
+		: Tile()
+	{
+		setSharedProperties(type);
+	}
+	Tile()
+		: sharedProperties(nullptr)
+	{
+
+	}
+	void pointTo(Tile* tile)
+	{
+		setSharedProperties(tile->getSharedProperties());
+	}
+
+	~Tile()
+	{
+		
+	}
+
+	void setSharedProperties(TileType* type) 
+	{ 
+		sharedProperties = type; 
+		setImage(type->getImage());
+	}
+
+	TileType* getSharedProperties() const { return sharedProperties != nullptr ? sharedProperties : nullptr; }
 	
-	Properties property;
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Tile)
+private:
+	TileType* sharedProperties;
+	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(Tile)
 };

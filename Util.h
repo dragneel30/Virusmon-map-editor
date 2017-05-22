@@ -10,6 +10,7 @@ void myLog(int strInteger);
 void myLog(float strFloat);
 
 
+
 File getAbsolutePath(String relativePath);
 Image getImageFromFile(String relativePath);
 

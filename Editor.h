@@ -14,6 +14,8 @@
 #include "BaseWindow.h"
 #include "Tab.h"
 #include "Tool.h"
+#include "TabbedComponentWrapper.h"
+#include "Tile.h"
 //==============================================================================
 /*
 */
@@ -21,17 +23,15 @@ class Editor : public BaseWindow, public ButtonListener
 {
 public:
 	Editor(String name, Vector2i size)
-		: BaseWindow(name, size), toolWindow("Editor tools",Vector2i(800,800)),
-		mapContainer(TabbedButtonBar::TabsAtTop), tilesetContainer(TabbedButtonBar::TabsAtTop), selectedTile(nullptr), selectedTool(&default)
+		: BaseWindow(name, size), toolWindow("Editor tools", Vector2i(640, 320)),
+		mapContainer(TabbedButtonBar::TabsAtTop), tilesetContainer(TabbedButtonBar::TabsAtTop), selectedTile(new Tile()), selectedTool(&default)
 	{
 		selectedTool->toggle();
-		size.x = 768;
-		size.y = 768;
 		toolWindow.setContentNonOwned(&toolContentComponent, false);
 		setContentNonOwned(&editorContentComponent, false);
 		
 		
-		eraser.setImages(false, true, true, getImageFromFile("Asset/eraser.png"), 1.0f, Colour(), Image(), 1.0f, Colour(), Image(), 1.0f, Colour());
+		eraser.setImages(true, true, true, getImageFromFile("Asset/eraser.png"), 1.0f, Colour(), Image(), 1.0f, Colour(), Image(), 1.0f, Colour());
 		bucketfiller.setImages(false, true, true, getImageFromFile("Asset/bucketfiller.png"), 1.0f, Colour(), Image(), 1.0f, Colour(), Image(), 1.0f, Colour());
 		default.setImages(false, true, true, getImageFromFile("Asset/default.png"), 1.0f, Colour(), Image(), 1.0f, Colour(), Image(), 1.0f, Colour());
 		browseFile.setImages(false, true, true, getImageFromFile("Asset/fileopen.png"), 1.0f, Colour(), Image(), 1.0f, Colour(), Image(), 1.0f, Colour());
@@ -54,8 +54,8 @@ public:
 
 		addToEditorContentComponent(mapContainer.get());
 
-		mapContainer.addTab("Test 1", true, new GridTab(Vector2i(100, 100), Vector2i(32, 32), std::bind(&Editor::fillNode, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
-		mapContainer.addTab("Test 2", true, new GridTab(Vector2i(100, 100), Vector2i(32, 32), std::bind(&Editor::fillNode, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
+		mapContainer.addTab("Map 1", true, new EditTab(Vector2i(100, 100), Vector2i(32, 32), File(), std::bind(&Editor::fillNode, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
+		mapContainer.addTab("Map 2", true, new EditTab(Vector2i(100, 100), Vector2i(32, 32), File(), std::bind(&Editor::fillNode, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
 
 
 	}
@@ -76,29 +76,28 @@ public:
 		BaseWindow::resized();
 		mapContainer.setBounds(editorContentComponent.getLocalBounds());
 
-		Rectangle<int> toolBounds(toolContentComponent.getLocalBounds());
 		int width = 32;
 		int height = 32;
+		Rectangle<int> toolBounds(toolContentComponent.getLocalBounds());
+		tilesetContainer.setBounds(toolBounds.removeFromTop(toolBounds.getHeight()-width));
 		Vector2i pos(toolBounds.getX(), toolBounds.getY());
 		default.setBounds(pos.x, pos.y, width, height);
-		updatePosition(pos, toolBounds.getWidth());
+		pos.x += width;
 		eraser.setBounds(pos.x, pos.y, width, height);
-		updatePosition(pos, toolBounds.getWidth());
+		pos.x += width;
 		bucketfiller.setBounds(pos.x, pos.y, width, height);
-		updatePosition(pos, toolBounds.getWidth());
+		pos.x = toolBounds.getWidth()/2;
 		browseFile.setBounds(pos.x, pos.y, width, height);
-		tilesetContainer.setBounds(toolBounds.removeFromBottom(500));
 	}
 
 	void updatePosition(Vector2i& pos, int width)
 	{
-		if (pos.x >= width)
+		pos.x += 32;
+		if (pos.x > width)
 		{
 			pos.y += 32;
 			pos.x = 0;
 		}
-		else
-			pos.x += 32;
 	}
 	virtual void buttonClicked(Button* button) override
 	{
@@ -113,11 +112,12 @@ public:
 			{
 				if (fileBrowser.getNumSelectedFiles() > 0)
 				{
-					String filePath = fileBrowser.getSelectedFile(0).getFullPathName();
-					OwnedArray<ImageComponent> clippedImages = getClippedImagesFromFile(filePath, Vector2i(32, 32));
-					GridTab* tab = new GridTab(Vector2i(25, 6), Vector2i(32, 32), std::bind(&Editor::setCurrentSelectedNode, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3), std::move(clippedImages));
+					File file = fileBrowser.getSelectedFile(0);
+					
+					Tab* tab = new TilesetTab(Vector2i(25, 6), Vector2i(32, 32), file, 
+						std::bind(&Editor::setCurrentSelectedNode, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 
-					tilesetContainer.addTab("test", true, tab);
+					tilesetContainer.addTab(file.getFileNameWithoutExtension(), true, tab);
 				}
 			}
 		}
@@ -126,7 +126,7 @@ public:
 			selectedTool->toggle();
 			if ( selectedTool != button )
 			{
-				selectedTool = static_cast<ToolButton*>(button);
+				selectedTool = dynamic_cast<ToolButton*>(button);
 			}
 			else
 			{
@@ -146,7 +146,8 @@ public:
 		editorContentComponent.addAndMakeVisible(mapContainer.get());
 	}
 
-	void fillNode(GridTab& currentTab, ImageComponent& selectedImageComponent, ModifierKeys mouseButton)
+
+	void fillNode(GridTabProto& currentTab, Tile* selectedNode, ModifierKeys mouseButton)
 	{
 		if (mouseButton != ModifierKeys::middleButtonModifier)
 		{
@@ -156,20 +157,22 @@ public:
 				{
 					if (selectedTool == &default)
 					{
-						if (selectedTile != nullptr)
+						if (selectedTile->getSharedProperties() != nullptr)
 						{
-							selectedImageComponent.setImage(*selectedTile);
+							selectedNode->pointTo(selectedTile);
 						}
 					}
 					else if (selectedTool == &eraser)
 					{
-						selectedImageComponent.setImage(GridTab::getDefaultNodeImage());
+						EditTab& refCurrentTab = dynamic_cast<EditTab&>(currentTab);
+						refCurrentTab.erase(selectedNode);
 					}
 					else if (selectedTool == &bucketfiller)
 					{
 						if (selectedTile != nullptr)
 						{
-							currentTab.fill(*selectedTile);
+							EditTab& refCurrentTab = dynamic_cast<EditTab&>(currentTab);
+							refCurrentTab.fill(*selectedTile);
 						}
 					}
 				}
@@ -177,30 +180,31 @@ public:
 		}
 	}
 
-	void setCurrentSelectedNode(GridTab& currentTab, ImageComponent& newNode, ModifierKeys mouseButton)
+	void setCurrentSelectedNode(GridTabProto& currentTab, Tile* newNode, ModifierKeys mouseButton)
 	{
+		myLog("test");
 		if (mouseButton == ModifierKeys::leftButtonModifier)
-			selectedTile = &newNode.getImage();
+		{
+			selectedTile->pointTo(newNode);
+		}
 	}
-
-	OwnedArray<ImageComponent> getClippedImagesFromFile(const String& filepath, Vector2i clipSize)
+	/*
+	OwnedArray<Tile> getClippedImagesFromFile(const String& filepath, Vector2i clipSize)
 	{
 		Image image = ImageFileFormat::loadFrom(File(filepath));
 		int width = image.getWidth() / clipSize.x;
 		int height = image.getHeight() / clipSize.y;
-		OwnedArray<ImageComponent> clippedImage;
+		OwnedArray<Tile> clippedImage;
 		for (int lHeight = 0; lHeight < height; lHeight++)
 		{
 			for (int lWidth = 0; lWidth < width; lWidth++)
 			{
 				int size = (clippedImage.size() - 1) + 1;
-				clippedImage.add(new ImageComponent(std::to_string(size)));
-				clippedImage[size]->setImage(image.getClippedImage(Rectangle<int>(lWidth * clipSize.x, lHeight * clipSize.y, clipSize.x, clipSize.y)));
-
+				clippedImage.add(new Tile(image.getClippedImage(Rectangle<int>(lWidth * clipSize.x, lHeight * clipSize.y, clipSize.x, clipSize.y))));
 			}
 		}
 		return clippedImage;
-	}
+	}*/
 private:
 
 	BaseWindow toolWindow;
@@ -217,7 +221,7 @@ private:
 	ToolButton browseFile;
 
 	ToolButton* selectedTool;
-	Image const* selectedTile;
+	Tile* selectedTile;
 
 
 

@@ -11,19 +11,26 @@
 #pragma once
 
 #include "../JuceLibraryCode/JuceHeader.h"
-
+#include <vector>
 //==============================================================================
 /*
 */
-class Properties    : public Component
+class Properties
 {
 public:
-    Properties();
-    ~Properties();
+	Properties()
+	{
+	
+	}
 
-    void paint (Graphics&) override;
-    void resized() override;
+	void add(std::string key, std::string value)
+	{
+		strProperties.push_back(std::make_pair(key, value));
+	}
 
 private:
+
+	std::vector<std::pair<std::string, std::string>> strProperties;
+	
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Properties)
 };

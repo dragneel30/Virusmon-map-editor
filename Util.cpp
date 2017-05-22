@@ -16,6 +16,7 @@ void myLog(float strFloat)
 	myLog(std::to_string(strFloat));
 }
 
+
 File getAbsolutePath(String relativePath)
 {
 	//myLog(File::getCurrentWorkingDirectory().getChildFile(relativePath).getFullPathName().toStdString());
