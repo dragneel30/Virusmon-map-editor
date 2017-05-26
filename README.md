@@ -33,6 +33,9 @@ New update: 05/18/2017 (almost all code has been rewritten)
 
 -some code has been refactored for reusability.
 
+05/26/2017
+
+-can now edit the properties of a tile
 
 
 
