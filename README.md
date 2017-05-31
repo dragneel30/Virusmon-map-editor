@@ -37,8 +37,17 @@ New update: 05/18/2017 (almost all code has been rewritten)
 
 -can now edit the properties of a tile
 
+05/31/2017
 
+-fixed tileset generator bug
 
+-added support for json
+
+---- Export map to JSON file
+
+-menu bar for new and save menu.
+
+(testing now)
 
    
      
