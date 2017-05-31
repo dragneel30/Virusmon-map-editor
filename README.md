@@ -9,6 +9,13 @@ JUCE is an open-source cross-platform C++ application framework, used for the de
 
 I'm currently developing this map editor at the same time learning JUCE so this will be a slow development.
 
+
+Legend:
+
+![alt text](http://i.imgur.com/DB79uf1.png) list
+
+![alt text](http://i.imgur.com/3vZfR47.png) sub-list
+
 Initial progress: 03/12/17
 
 -Most are UI of the editor.
@@ -43,7 +50,7 @@ New update: 05/18/2017 (almost all code has been rewritten)
 
 -added support for json
 
----- Export map to JSON file
+----Export map to JSON file
 
 -menu bar for new and save menu.
 
