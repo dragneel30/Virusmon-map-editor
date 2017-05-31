@@ -1,12 +1,3 @@
-/*
-  ==============================================================================
-
-    Editor.h
-    Created: 17 May 2017 7:59:12am
-    Author:  Lorence
-
-  ==============================================================================
-*/
 
 #pragma once
 
@@ -16,77 +7,229 @@
 #include "Tool.h"
 #include "TabbedComponentWrapper.h"
 #include "Tile.h"
-//==============================================================================
-/*
-*/
-class Editor : public BaseWindow, public ButtonListener
+#include <memory>
+#include "json.hpp"
+#include <fstream>
+using json = nlohmann::json;
+class Editor : public BaseWindow, public ButtonListener, public MenuBarModel
 {
+
+public:
+	////// MenuBarModel
+	virtual StringArray getMenuBarNames()
+	{
+		return menus;
+	}
+
+	virtual PopupMenu getMenuForIndex(int topLevelMenuIndex,
+		const String& menuName)
+	{
+		return *popups[topLevelMenuIndex];
+	}
+
+	virtual void menuItemSelected(int menuItemID, int topLevelMenuIndex)
+	{
+		if (topLevelMenuIndex == 0)
+		{
+			if (menuItemID == 1)
+			{
+				CreateModal create;
+				if (openModal(create) == Modal::SUCCESS)
+				{
+					File file(File::getCurrentWorkingDirectory().getFullPathName() + "/" + create.getFileName() + ".json");
+					mapContainer.addTab(create.getFileName(), true, new EditTab(create.getMapSize(), create.getTileSize(), 
+						file, std::bind(&Editor::fillNode, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
+					myLog(file.getFullPathName().toStdString());
+				}	
+			}
+			else if (menuItemID == 2)
+			{
+				if (mapContainer.get().getNumTabs() > 0)
+				{
+					EditTab* tab =  static_cast<EditTab*>(static_cast<Viewport*>(mapContainer.get().getCurrentContentComponent())->getViewedComponent());
+					
+					if (!tab->isSaved())
+					{
+						FileChooser file("Save", File(), "*.json", false, false);
+						if (file.browseForFileToSave(true))
+						{
+							File result = file.getResult();
+							File finalFile;
+							if (result.hasFileExtension(".json"))
+							{
+								finalFile = result;
+							}
+							else
+							{
+								finalFile = File(result.getFullPathName() + ".json");
+							}
+							json jsonWriter;
+							
+							const OwnedArray<Tile>& reftiles = tab->getNodes();
+							for (int a = 0; a < reftiles.size(); a++)
+							{
+								Tile* ptrTile = reftiles[a];
+								const std::vector<std::pair<String, String>>& properties = ptrTile->getSharedProperties()->getStrProperties().getProperties();
+								std::vector<std::string> tiles;
+								if (ptrTile->getSharedProperties()->getID() != -1)
+								{
+									jsonWriter["Tile"] += properties[0].second.toStdString();
+									for (int a = 1; a < properties.size(); a++)
+									{
+										myLog(properties[a].first.toStdString() + " " + properties[a].second.toStdString());
+										jsonWriter["Tileset"][tab->getFile().getFileName().toStdString()]["Properties"][properties[0].second.toStdString()][properties[a].first.toStdString()] = properties[a].second.toStdString();
+									}
+								}
+								//jsonWriter = tiles;
+							}
+
+							std::ofstream fileWriter(finalFile.getFullPathName().toStdString());
+							if (fileWriter.is_open())
+							{
+								fileWriter << std::setw(4) << jsonWriter;
+							}
+
+						}
+					}
+				}
+			}
+		}
+	}
+private:
+	StringArray menus;
+	std::vector<std::unique_ptr<PopupMenu>> popups;
+	////// end MenuBarModel
 public:
 	Editor(String name, Vector2i size)
 		: BaseWindow(name, size), toolWindow("Editor tools", Vector2i(640, 320)),
-		mapContainer(TabbedButtonBar::TabsAtTop), tilesetContainer(TabbedButtonBar::TabsAtTop), selectedTile(new Tile()), selectedTool(&default)
+		mapContainer(TabbedButtonBar::TabsAtTop, std::bind(&Editor::editorClose, this, std::placeholders::_1)),
+		tilesetContainer(TabbedButtonBar::TabsAtTop, std::bind(&Editor::tilesetClose, this, std::placeholders::_1)),
+		selectedTile(new Tile()), selectedTool(&default), editorMenuBarComponent(nullptr)
 	{
 		selectedTool->toggle();
+
+
 		toolWindow.setContentNonOwned(&toolContentComponent, false);
 		setContentNonOwned(&editorContentComponent, false);
-		
-		
-		eraser.setImages(true, true, true, getImageFromFile("Asset/eraser.png"), 1.0f, Colour(), Image(), 1.0f, Colour(), Image(), 1.0f, Colour());
-		bucketfiller.setImages(false, true, true, getImageFromFile("Asset/bucketfiller.png"), 1.0f, Colour(), Image(), 1.0f, Colour(), Image(), 1.0f, Colour());
-		default.setImages(false, true, true, getImageFromFile("Asset/default.png"), 1.0f, Colour(), Image(), 1.0f, Colour(), Image(), 1.0f, Colour());
-		browseFile.setImages(false, true, true, getImageFromFile("Asset/fileopen.png"), 1.0f, Colour(), Image(), 1.0f, Colour(), Image(), 1.0f, Colour());
-	
+
+		Colour tWhite((uint8)0, (uint8)0, (uint8)0, 0.5f);
+		Colour tGrey((uint8)123, (uint8)123, (uint8)123, 0.5f);
+		eraser.setImages(false, true, true, getImageFromFile("Asset/eraser.png"), 1.0f, Colour(), Image(), 1.0f, tWhite, Image(), 1.0f, tGrey);
+		bucketfiller.setImages(false, true, true, getImageFromFile("Asset/bucketfiller.png"), 1.0f, Colour(), Image(), 1.0f, tWhite, Image(), 1.0f, tGrey);
+		default.setImages(false, true, true, getImageFromFile("Asset/default.png"), 1.0f, Colour(), Image(), 1.0f, tWhite, Image(), 1.0f, tGrey);
+		browseFile.setImages(false, true, true, getImageFromFile("Asset/fileopen.png"), 1.0f, Colour(), Image(), 1.0f, tWhite, Image(), 1.0f, tGrey);
+
 		browseFile.setButtonText("...");
-		browseFile.addListener(this);
 		eraser.setButtonText("er");
-		eraser.addListener(this);
 		bucketfiller.setButtonText("fil");
-		bucketfiller.addListener(this);
 		default.setButtonText("def");
+
+		browseFile.addListener(this);
+		eraser.addListener(this);
+		bucketfiller.addListener(this);
 		default.addListener(this);
-		
+
 		addToToolContentComponent(eraser);
 		addToToolContentComponent(bucketfiller);
 		addToToolContentComponent(default);
 		addToToolContentComponent(tilesetContainer.get());
 		addToToolContentComponent(browseFile);
-		
 
 		addToEditorContentComponent(mapContainer.get());
 
-		mapContainer.addTab("Map 1", true, new EditTab(Vector2i(100, 100), Vector2i(32, 32), File(), std::bind(&Editor::fillNode, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
-		mapContainer.addTab("Map 2", true, new EditTab(Vector2i(100, 100), Vector2i(32, 32), File(), std::bind(&Editor::fillNode, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
+	
+		std::unique_ptr<PopupMenu> file(new PopupMenu());
 
+		menus.add("File");
+		
+		file->addItem(1, "New", true, false);
+		file->addItem(2, "Save", true, false);
+		
+		popups.push_back(std::move(file));
 
+		editorMenuBarComponent.setModel(this);
+		setMenuBarComponent(&editorMenuBarComponent);
 	}
-	~Editor() 
+	~Editor()
 	{
 		selectedTool = nullptr;
 		selectedTile = nullptr;
 	}
+
 
 	void closeButtonPressed() override
 	{
 		JUCEApplication::getInstance()->systemRequestedQuit();
 	}
 
+	bool tilesetClose(Tab* tab)
+	{
+
+		TilesetTab* reftab = static_cast<TilesetTab*>(tab);
+		OwnedArray<Tile>& reftilestileset = reftab->getNodes();
+		bool hasPointer = false;
+		OwnedArray<Tab>& edittabs = mapContainer.getTabs();
+		myLog("tilesetClose()");
+		for (int a = 0; a < edittabs.size(); a++)
+		{
+			EditTab* edittab = static_cast<EditTab*>(edittabs[a]);
+			const OwnedArray<Tile>& reftileedit = edittab->getNodes();
+			for (int i = 0; i < reftilestileset.size(); i++)
+			{
+				for (int j = 0; j < reftileedit.size(); j++)
+				{
+					if (reftileedit[j]->getSharedProperties() == reftilestileset[i]->getSharedProperties())
+					{
+						if (!hasPointer)
+						{
+							WarningModal warning("Are you sure?", Vector2i(300, 300));
+							if (openModal(warning) == WarningModal::SUCCESS)
+							{
+								hasPointer = true;
+							}
+							else
+							{
+								return false;
+							}
+						}
+						else
+						{
+							edittab->erase(reftileedit[j]);
+						}
+					}
+				}
+			}
+
+		}
+
+		return true;
+	}
+
+	bool editorClose(Tab* tab)
+	{
+		EditTab* reftab = static_cast<EditTab*>(tab);
+		myLog("editorClose()");
+		return true;
+	}
 
 	void resized() override
 	{
 		BaseWindow::resized();
+
+		//mapContainer.setBounds(editorContentComponent.getLocalBounds().removeFromBottom(editorContentComponent.getLocalBounds().getHeight() - toolMenuBarComponent.getHeight()));
 		mapContainer.setBounds(editorContentComponent.getLocalBounds());
 
 		int width = 32;
 		int height = 32;
 		Rectangle<int> toolBounds(toolContentComponent.getLocalBounds());
-		tilesetContainer.setBounds(toolBounds.removeFromTop(toolBounds.getHeight()-width));
+		tilesetContainer.setBounds(toolBounds.removeFromTop(toolBounds.getHeight() - width));
 		Vector2i pos(toolBounds.getX(), toolBounds.getY());
 		default.setBounds(pos.x, pos.y, width, height);
 		pos.x += width;
 		eraser.setBounds(pos.x, pos.y, width, height);
 		pos.x += width;
 		bucketfiller.setBounds(pos.x, pos.y, width, height);
-		pos.x = toolBounds.getWidth()/2;
+		pos.x = toolBounds.getWidth() / 2;
 		browseFile.setBounds(pos.x, pos.y, width, height);
 	}
 
@@ -113,8 +256,8 @@ public:
 				if (fileBrowser.getNumSelectedFiles() > 0)
 				{
 					File file = fileBrowser.getSelectedFile(0);
-					
-					Tab* tab = new TilesetTab(Vector2i(25, 6), Vector2i(32, 32), file, 
+				
+					Tab* tab = new TilesetTab(Vector2i(32, 32), file.getFullPathName(),
 						std::bind(&Editor::setCurrentSelectedNode, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 
 					tilesetContainer.addTab(file.getFileNameWithoutExtension(), true, tab);
@@ -123,8 +266,9 @@ public:
 		}
 		else
 		{
+
 			selectedTool->toggle();
-			if ( selectedTool != button )
+			if (selectedTool != button)
 			{
 				selectedTool = dynamic_cast<ToolButton*>(button);
 			}
@@ -177,34 +321,29 @@ public:
 					}
 				}
 			}
+			else
+			{
+				selectedNode->getSharedProperties()->getStrProperties().show();
+			}
 		}
 	}
 
 	void setCurrentSelectedNode(GridTabProto& currentTab, Tile* newNode, ModifierKeys mouseButton)
 	{
-		myLog("test");
 		if (mouseButton == ModifierKeys::leftButtonModifier)
 		{
-			selectedTile->pointTo(newNode);
+			selectedTile->pointTo(newNode);/*
+										   for (int a = 0; a < selectedTile->getSharedProperties()->getStrProperties().getProperties().size(); a++)
+										   {
+										   myLog(selectedTile->getSharedProperties()->getStrProperties().getProperties()[a].second.toStdString());
+										   }*/
+		}
+		else if (mouseButton == ModifierKeys::rightButtonModifier)
+		{
+			newNode->getSharedProperties()->getStrProperties().show();
 		}
 	}
-	/*
-	OwnedArray<Tile> getClippedImagesFromFile(const String& filepath, Vector2i clipSize)
-	{
-		Image image = ImageFileFormat::loadFrom(File(filepath));
-		int width = image.getWidth() / clipSize.x;
-		int height = image.getHeight() / clipSize.y;
-		OwnedArray<Tile> clippedImage;
-		for (int lHeight = 0; lHeight < height; lHeight++)
-		{
-			for (int lWidth = 0; lWidth < width; lWidth++)
-			{
-				int size = (clippedImage.size() - 1) + 1;
-				clippedImage.add(new Tile(image.getClippedImage(Rectangle<int>(lWidth * clipSize.x, lHeight * clipSize.y, clipSize.x, clipSize.y))));
-			}
-		}
-		return clippedImage;
-	}*/
+
 private:
 
 	BaseWindow toolWindow;
@@ -214,6 +353,7 @@ private:
 	TabbedComponentWrapper mapContainer;
 	TabbedComponentWrapper tilesetContainer;
 
+	MenuBarComponent editorMenuBarComponent;
 
 	ToolButton eraser;
 	ToolButton bucketfiller;
@@ -227,5 +367,5 @@ private:
 
 
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Editor)
+	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(Editor)
 };

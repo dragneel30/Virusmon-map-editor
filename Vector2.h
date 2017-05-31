@@ -23,7 +23,11 @@ template<class T> struct Vector2
 	{
 		
 	}
-	
+	Vector2()
+		: x(0), y(0)
+	{
+		
+	}
 	Vector2<T> operator=(Point<T> p)
 	{
 		x = p.x;

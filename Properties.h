@@ -12,9 +12,7 @@
 
 #include "../JuceLibraryCode/JuceHeader.h"
 #include <vector>
-//==============================================================================
-/*
-*/
+#include "PropertiesWindow.h"
 class Properties
 {
 public:
@@ -23,14 +21,23 @@ public:
 	
 	}
 
-	void add(std::string key, std::string value)
+	void add(std::string property, std::string value)
 	{
-		strProperties.push_back(std::make_pair(key, value));
+		strProperties.push_back(std::make_pair(property, value));
 	}
 
+	const std::vector<std::pair<String, String>>& getProperties()
+	{
+		return strProperties;
+	}
+	void show()
+	{
+		window = new PropertiesWindow("Properties", Vector2i(200, 800), strProperties);
+		window->setVisible(true);
+	}
 private:
-
-	std::vector<std::pair<std::string, std::string>> strProperties;
+	static PropertiesWindow* window;
+	std::vector<std::pair<String, String>> strProperties;
 	
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Properties)
 };

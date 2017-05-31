@@ -38,3 +38,8 @@ int makePOT(int n)
 	return temp / 2;
 }
 
+
+void myLog(wchar_t character)
+{
+	myLog(String(character).toStdString());
+}

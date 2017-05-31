@@ -9,44 +9,47 @@ class TabbedComponentWrapper : public ButtonListener
 {
     
 public:
-	TabbedComponentWrapper(TabbedButtonBar::Orientation orientation)
-		: tabsHolder(orientation)
+	TabbedComponentWrapper(TabbedButtonBar::Orientation orientation, std::function<bool(Tab*)> callbacks = std::function<bool(Tab*)>())
+		: tabsHolder(orientation), closeTabCallbacks(callbacks)
 	{
 	}
 
-	void addTab(String tabName, Tab* tab)
+	void addTab(String tabName, bool hasCloseButton, Tab* tab)
 	{
 		std::size_t tabCount = tabsHolder.getNumTabs();
 
-		viewports.add(new Viewport("viewport" + std::to_string(tabCount)));
-
 		tabs.add(tab);
 
+		viewports.add(new Viewport("viewport" + std::to_string(tabCount)));
 		viewports[tabCount]->setViewedComponent(tabs[tabCount], false);
+		//viewports[tabCount]->addMouseListener(tab, true);
 
 		tabsHolder.addTab(tabName, Colour(123, 123, 123), viewports[tabCount], false, tabCount);
-		TextButton* button = new TextButton();
-		button->setButtonText("X");
-		button->setSize(32, 32);
-		button->addListener(this);
-		
-		tabsHolder.getTabbedButtonBar().getTabButton(tabCount)->setExtraComponent(button, TabBarButton::ExtraComponentPlacement::afterText);
 
+		if (hasCloseButton)
+		{
+			TextButton* button = new TextButton();
+			button->setButtonText("X");
+			button->setSize(32, 32);
+			button->addListener(this);
+			tabsHolder.getTabbedButtonBar().getTabButton(tabCount)->setExtraComponent(button, TabBarButton::ExtraComponentPlacement::afterText);
+		}
 
-		tabsHolder.addMouseListener(tab, true);
 	}
-
-
-
+	
+	std::function<bool(Tab*)> closeTabCallbacks;
 	void buttonClicked(Button* button) override
 	{
 		for (int a = 0; a < tabsHolder.getNumTabs(); a++)
 		{
 			if (tabsHolder.getTabbedButtonBar().getTabButton(a)->getExtraComponent() == button)
 			{
-				tabs.remove(a, true);
-				viewports.remove(a, true);
-				tabsHolder.removeTab(a);
+				if (closeTabCallbacks(tabs[a]))
+				{
+					tabs.remove(a, true);
+					viewports.remove(a, true);
+					tabsHolder.removeTab(a);
+				}
 				return;
 			}
 		}
@@ -59,6 +62,23 @@ public:
 	TabbedComponent& get()
 	{
 		return tabsHolder;
+	}
+	OwnedArray<Tab>& getTabs() { return tabs; }
+
+	bool isExist(const String& tabname)
+	{
+		const StringArray& tabnames = tabsHolder.getTabNames();
+		for (int a = 0; a < tabnames.size(); a++)
+		{
+			if (tabnames[a] == tabname)
+				return true;
+		}
+		return false;
+	}
+
+	Tab* getTab(int index)
+	{
+		return tabs[index];
 	}
 private:
 	TabbedComponent tabsHolder;

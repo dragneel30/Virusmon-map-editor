@@ -43,6 +43,10 @@ public:
 		id++;
 		return temp;
 	}
+	bool operator!=(T iid)
+	{
+		return id != iid;
+	}
 private:
 	UID& operator=(UID& newID);
 	T id;
@@ -58,13 +62,16 @@ public:
 	TileType(intUID iid, const Image& pImage)
 		: image(pImage), id(iid)
 	{
-		getStrProperties().add("ID", std::to_string(iid.getID()));
+		strProperties.add("ID", std::to_string(iid.getID()));
+		strProperties.add("sizeX", "1");
+		strProperties.add("sizeY", "1");
 	}
 	TileType(const TileType& other)
 		: TileType(other.getID(), other.getImage())
 	{
 
 	}
+
 	Properties& getStrProperties() { return strProperties; }
 	const Image& getImage() const { return image; }
     intUID getID() const { return id; }
@@ -77,7 +84,7 @@ private:
 class Tile : public ImageComponent
 {
 public:
-	Tile(TileType* type)
+	Tile(std::shared_ptr<TileType> type)
 		: Tile()
 	{
 		setSharedProperties(type);
@@ -94,18 +101,17 @@ public:
 
 	~Tile()
 	{
-		
 	}
 
-	void setSharedProperties(TileType* type) 
+	void setSharedProperties(std::shared_ptr<TileType> type)
 	{ 
 		sharedProperties = type; 
 		setImage(type->getImage());
 	}
 
-	TileType* getSharedProperties() const { return sharedProperties != nullptr ? sharedProperties : nullptr; }
+	std::shared_ptr<TileType> getSharedProperties() const { return sharedProperties; }
 	
 private:
-	TileType* sharedProperties;
+	std::shared_ptr<TileType> sharedProperties;
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(Tile)
 };

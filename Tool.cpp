@@ -12,5 +12,4 @@
 #include "Tool.h"
 
 
-const Colour ToolButton::colorWhenSelected = Colour((uint8)128, (uint8)128, (uint8)128, 0.5f);
-const Colour ToolButton::colorWhenHovered = Colour((uint8)255, (uint8)255, (uint8)255, 0.5f);
+const Colour ToolButton::colorWhenSelected = Colour((uint8)255, (uint8)255, (uint8)255, 0.5f);

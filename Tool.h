@@ -17,21 +17,11 @@ class ToolButton : public ImageButton
 public:
 	 
 	ToolButton(const String& name = String()) 
-		: ImageButton(name), selected(false), hovering(false)
+		: ImageButton(name), selected(false)
 	{
 
 	}
 
-	void mouseEnter(const MouseEvent& event) override
-	{
-		hovering = true;
-	}
-
-	void mouseExit(const MouseEvent& event) override
-	{
-
-		hovering = false;
-	}
 
 
 	void paint(Graphics& g) override
@@ -43,23 +33,13 @@ public:
 			g.fillRect(0, 0, getWidth(), getHeight());
 			repaint();
 		}
-		else if (isHovering())
-		{
-			g.setColour(colorWhenHovered);
-			g.drawRect(0, 0, getWidth(), getHeight());
-			repaint();
-			
-		}
 	}
 
 
 	bool isSelected() { return selected; }
-	bool isHovering() { return hovering; }
 	void toggle() { selected = !selected; }
 private:
 	bool selected;
-	bool hovering;
 	static const Colour colorWhenSelected;
-	static const Colour colorWhenHovered;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ToolButton)
 };

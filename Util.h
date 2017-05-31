@@ -8,7 +8,7 @@
 void myLog(const std::string& str);
 void myLog(int strInteger);
 void myLog(float strFloat);
-
+void myLog(wchar_t character);
 
 
 File getAbsolutePath(String relativePath);

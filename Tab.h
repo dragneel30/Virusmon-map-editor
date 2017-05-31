@@ -19,8 +19,6 @@ public:
 	{
 		setSize(tSize.x, tSize.y);
 		myLog("Tab");
-		myLog(tSize.x);
-		myLog(tSize.y);
 	}
 
 	virtual ~Tab() {}
@@ -39,7 +37,10 @@ public:
 	virtual ~GridTabProto()
 	{
 	}
-
+	bool contains(const Tile* tile)
+	{
+		return nodes.contains(tile);
+	}
 	void resized() override
 	{
 		int x = 0, y = 0;
@@ -56,12 +57,16 @@ public:
 		
 	}
 
+	const File& getFile()
+	{
+		return file;
+	}
 	OwnedArray<Tile>& getNodes() { return nodes; }
 protected:
+	File file;
 	std::function<void(GridTabProto&, Tile*, ModifierKeys)> nodeClickCallback;
 	OwnedArray<Tile> nodes;
 	Vector2i nodeSize;
-	File file;
 	virtual void generateGrid() = 0;
 	class GridTabProtoListener : public MouseListener
 	{
@@ -76,7 +81,7 @@ protected:
 		}
 		virtual void mouseDown(const MouseEvent& event) override 
 		{
-			Vector2i pos = event.getEventRelativeTo(broadcaster->getParentComponent()).getPosition();
+			Vector2i pos = event.getEventRelativeTo(broadcaster).getPosition();
 			nodeClicked(pos, event);
 		}
 		void nodeClicked(Vector2i mousePos, const MouseEvent& event)
@@ -84,6 +89,7 @@ protected:
 			for (int a = 0; a < broadcaster->nodes.size(); a++)
 			{
 				Rectangle<int> bounds = broadcaster->nodes[a]->getBounds();
+				//myLog(std::to_string(bounds.getX()) + " " + std::to_string(bounds.getY()));
 				if (mousePos.x >= bounds.getX() && mousePos.y >= bounds.getY() && mousePos.x <= bounds.getX() + bounds.getWidth() && mousePos.y <= bounds.getY() + bounds.getHeight())
 				{
 					if (event.mods.isRightButtonDown())
@@ -101,7 +107,7 @@ protected:
 
 		virtual void mouseDrag(const MouseEvent& event) override
 		{
-			Vector2i pos = event.getEventRelativeTo(broadcaster->getParentComponent()).getPosition();
+			Vector2i pos = event.getEventRelativeTo(broadcaster).getPosition();
 			nodeClicked(pos, event);
 		}
 	private:
@@ -113,14 +119,14 @@ protected:
 
 class EditTab : public GridTabProto
 {
-
 public:
+	bool isSaved() { return saved; }
+	bool setSave(bool save) { saved = save; }
 	EditTab(Vector2i tSize, Vector2i nSize, const File& file, const std::function<void(GridTabProto&, Tile*, ModifierKeys)>& pCallback)
-		: GridTabProto(Vector2i(tSize.x * nSize.x, tSize.y * nSize.y), nSize, file, pCallback)
+		: GridTabProto(Vector2i(tSize.x * nSize.x, tSize.y * nSize.y), nSize, file, pCallback), saved(false)
 	{
 		generateGrid();
 	}
-
 	virtual ~EditTab()
 	{
 		removeMouseListener(&mListener);
@@ -135,7 +141,6 @@ public:
 		}
 		resized();
 	}
-
 	void fill(Tile& tile)
 	{
 		for (int a = 0; a < nodes.size(); a++)
@@ -151,17 +156,18 @@ public:
 private:
 	static Tile& getDefaultNode()
 	{
-		static Tile defaultTile(new TileType(intUID(-1), getImageFromFile("Asset/defaultNodeImage.png")));
+		static Tile defaultTile(std::make_shared<TileType>(intUID(-1), getImageFromFile("Asset/defaultNodeImage.png")));
 		return defaultTile;
 	}
+	bool saved;
 };
 
 class TilesetTab : public GridTabProto
 {
 public:
 	
-	TilesetTab(Vector2i tSize, Vector2i nSize, const File& file, const std::function<void(GridTabProto&, Tile*, ModifierKeys)>& pCallback)
-		: GridTabProto(Vector2i(tSize.x * nSize.x, tSize.y * nSize.y), nSize, file, pCallback)
+	TilesetTab(Vector2i nSize, const File& pfile, const std::function<void(GridTabProto&, Tile*, ModifierKeys)>& pCallback)
+		: GridTabProto(loadAndCalculateGridSize(pfile, nSize), nSize, pfile, pCallback)
 	{
 
 		generateGrid();
@@ -170,20 +176,37 @@ public:
 	virtual ~TilesetTab()
 	{
 	}
-
+	Vector2i loadAndCalculateGridSize(const File& pfile, Vector2i nSize)
+	{
+		Image image = ImageFileFormat::loadFrom(pfile);
+	    // had to do this because if i make it a member then ill be using uninitialized pointer (ie its internal pointer)
+		Vector2i gridSize(image.getWidth() - (image.getWidth()/ nSize.x), image.getHeight() - (image.getHeight()/ nSize.y));
+		myLog("gridsize");
+		myLog(gridSize.x);
+		myLog(gridSize.y);
+		return gridSize;
+	}
 	virtual void generateGrid() override
 	{
 		Image image = ImageFileFormat::loadFrom(file);
-		int width = image.getWidth() / nodeSize.x;
-		int height = image.getHeight() / nodeSize.y;
-		intUID id = 0;
+		// had to do this because when i make it a member then ill be using uninitialized pointer (ie its internal pointer)
+
+		int width = getWidth() / nodeSize.x;
+		int height = getHeight() / nodeSize.y;
+		//myLog(width);
+		//myLog(height);
+		intUID id = 1;
+		int lineHeight = 0;
 		for (int lHeight = 0; lHeight < height; lHeight++)
 		{
+			int lineWidth = 0;
 			for (int lWidth = 0; lWidth < width; lWidth++)
 			{
-				nodes.add(new Tile(new TileType(id++, image.getClippedImage(Rectangle<int>(lWidth * nodeSize.x, lHeight * nodeSize.y, nodeSize.x, nodeSize.y)))));
+				Rectangle<int> bounds((lWidth * 32) + lineWidth++, (lHeight * 32) + lineHeight, 32, 32);
+				nodes.add(new Tile(std::make_shared<TileType>(id++, image.getClippedImage(Rectangle<int>(bounds)))));
 				addAndMakeVisible(nodes[nodes.size() - 1]);
 			}
+			lineHeight++;
 		}
 		resized();
 	}

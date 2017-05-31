@@ -10,3 +10,7 @@
 
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "Properties.h"
+
+
+
+PropertiesWindow *Properties::window = nullptr;

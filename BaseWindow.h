@@ -19,3 +19,14 @@ public:
 private:
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(BaseWindow)
 };
+
+
+class BaseModalWindow : public DialogWindow
+{
+public:
+	BaseModalWindow(String name, Vector2i size)
+		: DialogWindow(name, Colours::darkgrey, true, false)
+	{
+
+	}
+};
