@@ -54,7 +54,10 @@ I'm currently developing this map editor at the same time learning JUCE so this 
 
 ----Export map to JSON file
 
--menu bar for new and save menu.
+-menu bar for file menu 
+----New menu
+
+----Save menu
 
 <b>(testing now)</b>
 
