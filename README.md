@@ -12,9 +12,11 @@ I'm currently developing this map editor at the same time learning JUCE so this 
 
 Legend:
 
-![alt text](http://i.imgur.com/DB79uf1.png) list
+![alt text](http://i.imgur.com/3vZfR47.png) list
 
-![alt text](http://i.imgur.com/3vZfR47.png) sub-list
+
+![alt text](http://i.imgur.com/DB79uf1.png) sub-list
+
 
 Initial progress: 03/12/17
 
