@@ -18,7 +18,7 @@ I'm currently developing this map editor at the same time learning JUCE so this 
 ![alt text](http://i.imgur.com/DB79uf1.png) sub-list
 
 
-<b>Initial progress: 03/12/17</b>
+<b>Initial progress: 04/(forgot the exact day)/17</b>
 
 -Most are UI of the editor.
 
@@ -26,7 +26,7 @@ I'm currently developing this map editor at the same time learning JUCE so this 
 
 -Can now make tileset from a texture file. 
 
-<b>New update: 05/12/17 (took a long break lol)</b>
+<b>New update: 05/12/17</b>
 
 -Can now edit a map.
 
