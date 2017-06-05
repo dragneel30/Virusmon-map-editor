@@ -67,15 +67,15 @@ I'm currently developing this map editor at the same time learning JUCE so this 
 
 -forgot to upload a screenshot
 
-<b> - Here is the main window </b>
+<b> -Here is the main window </b>
 
 ![alt text](http://i.imgur.com/46A8jvm.png)
 
-<b> - Editor tool window </b>
+<b> -Editor tool window </b>
 
 ![alt text](http://i.imgur.com/prwaZJq.png)
 
-<b> - Property Editor Window </b>
+<b> -Property Editor Window </b>
 
 ![alt text](https://puu.sh/wbpa8/ba08c0683d.png)
 
