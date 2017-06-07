@@ -81,11 +81,11 @@ I'm currently developing this map editor at the same time learning JUCE so this 
 
 <b>New update: 06/07/2017</b>
 
-- fix bugs
+-fix bugs
 
-- almost all codes has been refactored
+-almost all codes has been refactored
 
-- changed json format
+-changed json format
 
 
 
