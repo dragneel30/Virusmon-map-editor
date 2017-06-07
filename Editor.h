@@ -9,6 +9,7 @@
 #include "Tile.h"
 #include <memory>
 #include "json.hpp"
+#include "PropertiesWindow.h"
 #include <fstream>
 using json = nlohmann::json;
 class Editor : public BaseWindow, public ButtonListener, public MenuBarModel
@@ -63,30 +64,89 @@ public:
 							{
 								finalFile = File(result.getFullPathName() + ".json");
 							}
-							json jsonWriter;
-							
 							const OwnedArray<Tile>& reftiles = tab->getNodes();
+							json jsonWriter;
+
+							/*
+							My JSON format !
+							    
+							{
+							    "tiles" :
+								[
+								   
+
+								]
+
+								"tileset" :
+								[
+								   {
+								       "file",
+									   "properties" : []
+								   }
+								]
+							}
+
+							*/
+							
+							for (int a = 0; a < reftiles.size(); a++)
+							{
+								jsonWriter["Tile"] += reftiles[a]->getSharedProperties()->getStrProperties().getProperties()[0].second.toStdString();
+							}
+
+							const OwnedArray<Tab>& reftilesettabs = tilesetContainer.getTabs();
+							for (int a = 0; a < reftilesettabs.size(); a++)
+							{
+								std::map<std::string, std::string> tilePropertyMap;
+								TilesetTab* const ptrTab = static_cast<TilesetTab*>(reftilesettabs[a]);
+								const OwnedArray<Tile>& refnodes = ptrTab->getNodes();
+								myLog("1");
+								for (int b = 0; b < refnodes.size(); b++)
+								{
+									myLog("2");
+									Properties& refproperties = refnodes[a]->getSharedProperties()->getStrProperties();
+
+									if (refproperties.isEdited())
+									{
+										myLog("3");
+										for (int c = refproperties.getDefaultPropertiesCount() - 1; c < refproperties.getCount(); c++)
+										{
+											myLog("4");
+											tilePropertyMap[refproperties.getProperties()[c].first.toStdString()] = refproperties.getProperties()[c].second.toStdString();
+										}
+									}
+									else myLog("not");
+								}
+								if (tilePropertyMap.size() > 0)
+								{
+									jsonWriter["tileset"][a]["file"] = ptrTab->getFile().getFileName().toStdString();
+									jsonWriter["tileset"][a]["properties"] += tilePropertyMap;
+								}
+							}
+							//for ( int a = 0; a < )
+							/*
 							for (int a = 0; a < reftiles.size(); a++)
 							{
 								Tile* ptrTile = reftiles[a];
-								const std::vector<std::pair<String, String>>& properties = ptrTile->getSharedProperties()->getStrProperties().getProperties();
-								std::vector<std::string> tiles;
-								if (ptrTile->getSharedProperties()->getID() != -1)
-								{
+
+							  	    const std::vector<std::pair<String, String>>& properties = ptrTile->getSharedProperties()->getStrProperties().getProperties();
+
 									jsonWriter["Tile"] += properties[0].second.toStdString();
 									for (int a = 1; a < properties.size(); a++)
 									{
-										myLog(properties[a].first.toStdString() + " " + properties[a].second.toStdString());
 										jsonWriter["Tileset"][tab->getFile().getFileName().toStdString()]["Properties"][properties[0].second.toStdString()][properties[a].first.toStdString()] = properties[a].second.toStdString();
 									}
-								}
-								//jsonWriter = tiles;
 							}
-
+							*/
 							std::ofstream fileWriter(finalFile.getFullPathName().toStdString());
+							
 							if (fileWriter.is_open())
 							{
 								fileWriter << std::setw(4) << jsonWriter;
+							}
+							else
+							{
+								WarningModal error("File wont open try again", Vector2i(300,300));
+								openModal(error);
 							}
 
 						}

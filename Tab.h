@@ -61,7 +61,7 @@ public:
 	{
 		return file;
 	}
-	OwnedArray<Tile>& getNodes() { return nodes; }
+    OwnedArray<Tile>& getNodes()  { return nodes; }
 protected:
 	File file;
 	std::function<void(GridTabProto&, Tile*, ModifierKeys)> nodeClickCallback;
@@ -179,7 +179,7 @@ public:
 	Vector2i loadAndCalculateGridSize(const File& pfile, Vector2i nSize)
 	{
 		Image image = ImageFileFormat::loadFrom(pfile);
-	    // had to do this because if i make it a member then ill be using uninitialized pointer (ie its internal pointer)
+	    // had to do this because if i make it a member then ill be using uninitialized pointer when loadAndCalculateGridSize() used it (ie its internal pointer)
 		Vector2i gridSize(image.getWidth() - (image.getWidth()/ nSize.x), image.getHeight() - (image.getHeight()/ nSize.y));
 		myLog("gridsize");
 		myLog(gridSize.x);
@@ -189,7 +189,7 @@ public:
 	virtual void generateGrid() override
 	{
 		Image image = ImageFileFormat::loadFrom(file);
-		// had to do this because when i make it a member then ill be using uninitialized pointer (ie its internal pointer)
+		// had to do this because when i make it a member then ill be using uninitialized pointer when loadAndCalculateGridSize() used it (ie its internal pointer)
 
 		int width = getWidth() / nodeSize.x;
 		int height = getHeight() / nodeSize.y;

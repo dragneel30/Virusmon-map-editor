@@ -83,7 +83,7 @@ class CreateModal : public Modal
 		{
 			for (int a = 0; a < newInput.length(); a++)
 			{
-				if (newInput[a] - 48 > 9 || newInput[a] - 48 < 0)
+				if (newInput[a] - 48 > 9 || newInput[a] - 48 < 0) // char - 48 should be from 0 to 9
 				{
 					return "";
 				}

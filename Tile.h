@@ -63,8 +63,10 @@ public:
 		: image(pImage), id(iid)
 	{
 		strProperties.add("ID", std::to_string(iid.getID()));
-		strProperties.add("sizeX", "1");
-		strProperties.add("sizeY", "1");
+		strProperties.add("width", "1");
+		strProperties.add("height", "1");
+		strProperties.setEdited(false);
+		strProperties.setDefaultPropertiesCount(3);
 	}
 	TileType(const TileType& other)
 		: TileType(other.getID(), other.getImage())
