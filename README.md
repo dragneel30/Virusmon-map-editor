@@ -79,5 +79,16 @@ I'm currently developing this map editor at the same time learning JUCE so this 
 
 ![alt text](https://puu.sh/wbpa8/ba08c0683d.png)
 
+<b>New update: 06/07/2017</b>
+
+- fix bugs
+
+- almost all codes has been refactored
+
+- changed json format
+
+
+
+
    
      
