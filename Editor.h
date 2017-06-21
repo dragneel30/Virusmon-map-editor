@@ -34,13 +34,12 @@ public:
 		{
 			if (menuItemID == 1)
 			{
-				CreateModal create;
+				CreateEditTab create;
 				if (openModal(create) == Modal::SUCCESS)
-				{
+				{ 
 					File file(File::getCurrentWorkingDirectory().getFullPathName() + "/" + create.getFileName() + ".json");
-					mapContainer.addTab(create.getFileName(), true, new EditTab(create.getMapSize(), create.getTileSize(), 
-						file, std::bind(&Editor::fillNode, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
-					myLog(file.getFullPathName().toStdString());
+					mapContainer.addTab(create.getFileName(), true, new EditTab(Vector2i(create.getColumnCount(), create.getRowCount()), Vector2i(create.getTileWidth(), create.getTileHeight()), 
+						file, std::bind(&Editor::fillNode, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3), create.getOrientation(), create.getRenderOrder()));
 				}	
 			}
 			else if (menuItemID == 2)
@@ -51,97 +50,72 @@ public:
 					
 					if (!tab->isSaved())
 					{
-						FileChooser file("Save", File(), "*.json", false, false);
+						FileChooser file("Save", File(), "*.json");
 						if (file.browseForFileToSave(true))
 						{
 							File result = file.getResult();
 							File finalFile;
-							if (result.hasFileExtension(".json"))
+							if (!result.hasFileExtension(".json"))
 							{
-								finalFile = result;
-							}
-							else
-							{
-								finalFile = File(result.getFullPathName() + ".json");
+								result = File(result.getFullPathName() + ".json");
 							}
 							const OwnedArray<Tile>& reftiles = tab->getNodes();
 							json jsonWriter;
 
-							/*
-							My JSON format !
-							    
-							{
-							    "tiles" :
-								[
-								   
-
-								]
-
-								"tileset" :
-								[
-								   {
-								       "file",
-									   "properties" : []
-								   }
-								]
-							}
-
-							*/
-							
+							jsonWriter["width"] = std::to_string(tab->getWidth());
+							jsonWriter["height"] = std::to_string(tab->getHeight());
+							jsonWriter["column"] = std::to_string(tab->getSizeBasedNodeCount().x);
+							jsonWriter["row"] = std::to_string(tab->getSizeBasedNodeCount().y);
+							jsonWriter["tile_width"] = std::to_string(tab->getNodeSize().x);
+							jsonWriter["tile_height"] = std::to_string(tab->getNodeSize().y);
+							jsonWriter["orientation"] = tab->getOrientation().toStdString();
+							jsonWriter["renderorder"] = tab->getRenderOrder().toStdString();
 							for (int a = 0; a < reftiles.size(); a++)
 							{
-								jsonWriter["Tile"] += reftiles[a]->getSharedProperties()->getStrProperties().getProperties()[0].second.toStdString();
+								jsonWriter["tiles"] += reftiles[a]->getSharedProperties()->getStrProperties().getProperties()[0].value.toStdString();
 							}
 
 							const OwnedArray<Tab>& reftilesettabs = tilesetContainer.getTabs();
+							myLog(reftilesettabs.size());
 							for (int a = 0; a < reftilesettabs.size(); a++)
 							{
-								std::map<std::string, std::string> tilePropertyMap;
 								TilesetTab* const ptrTab = static_cast<TilesetTab*>(reftilesettabs[a]);
 								const OwnedArray<Tile>& refnodes = ptrTab->getNodes();
-								myLog("1");
 								for (int b = 0; b < refnodes.size(); b++)
 								{
-									myLog("2");
-									Properties& refproperties = refnodes[a]->getSharedProperties()->getStrProperties();
+									std::map<std::string, std::string> tilePropertyMap;
+									Properties& refproperties = refnodes[b]->getSharedProperties()->getStrProperties();
 
 									if (refproperties.isEdited())
 									{
-										myLog("3");
-										for (int c = refproperties.getDefaultPropertiesCount() - 1; c < refproperties.getCount(); c++)
+										for (int c = refproperties.getDefaultPropertiesCount(); c < refproperties.getCount(); c++)
 										{
-											myLog("4");
-											tilePropertyMap[refproperties.getProperties()[c].first.toStdString()] = refproperties.getProperties()[c].second.toStdString();
+											tilePropertyMap[refproperties.getProperties()[c].key.toStdString()] = refproperties.getProperties()[c].value.toStdString();
 										}
 									}
-									else myLog("not");
-								}
-								if (tilePropertyMap.size() > 0)
-								{
-									jsonWriter["tileset"][a]["file"] = ptrTab->getFile().getFileName().toStdString();
-									jsonWriter["tileset"][a]["properties"] += tilePropertyMap;
-								}
-							}
-							//for ( int a = 0; a < )
-							/*
-							for (int a = 0; a < reftiles.size(); a++)
-							{
-								Tile* ptrTile = reftiles[a];
-
-							  	    const std::vector<std::pair<String, String>>& properties = ptrTile->getSharedProperties()->getStrProperties().getProperties();
-
-									jsonWriter["Tile"] += properties[0].second.toStdString();
-									for (int a = 1; a < properties.size(); a++)
+									if (tilePropertyMap.size() > 0)
 									{
-										jsonWriter["Tileset"][tab->getFile().getFileName().toStdString()]["Properties"][properties[0].second.toStdString()][properties[a].first.toStdString()] = properties[a].second.toStdString();
+										jsonWriter["tileset"][a]["properties"] += tilePropertyMap;
+										jsonWriter["tileset"][a]["file"] = ptrTab->getFile().getFileName().toStdString();
+										jsonWriter["tileset"][a]["name"] = ptrTab->getName().toStdString();
+										jsonWriter["tileset"][a]["image_width"] = std::to_string(ptrTab->getImageSize().x);
+										jsonWriter["tileset"][a]["image_height"] = std::to_string(ptrTab->getImageSize().y);
+										jsonWriter["tileset"][a]["tile_width"] = std::to_string(ptrTab->getNodeSize().x);
+										jsonWriter["tileset"][a]["tile_height"] = std::to_string(ptrTab->getNodeSize().y);
+										jsonWriter["tileset"][a]["tile_count"] = std::to_string(ptrTab->getTileCount());
+										jsonWriter["tileset"][a]["column"] = std::to_string(ptrTab->getSizeBasedNodeCount().x);
+										jsonWriter["tileset"][a]["row"] = std::to_string(ptrTab->getSizeBasedNodeCount().y);
+										jsonWriter["tileset"][a]["margin"] = std::to_string(ptrTab->getMargin());
+										jsonWriter["tileset"][a]["spacing"] = std::to_string(ptrTab->getSpacing());
 									}
+								}
 							}
-							*/
-							std::ofstream fileWriter(finalFile.getFullPathName().toStdString());
+							std::ofstream fileWriter(result.getFullPathName().toStdString());
 							
 							if (fileWriter.is_open())
 							{
 								fileWriter << std::setw(4) << jsonWriter;
+								tab->setSave(true);
 							}
 							else
 							{
@@ -153,6 +127,113 @@ public:
 					}
 				}
 			}
+			else if (menuItemID == 3)
+			{
+				FileChooser file("Select file", File(), "*.json", false);
+				if (file.browseForFileToOpen())
+				{
+					myLog("1");
+					File result = file.getResult();
+					OwnedArray<Tab>& refmapstabs = mapContainer.getTabs();
+					for (int a = 0; a < refmapstabs.size(); a++)
+					{
+						EditTab* refedittab = static_cast<EditTab*>(refmapstabs[a]);
+						if (refedittab->getFile() == result)
+						{
+							return;
+						}
+					}
+					if (result.hasFileExtension(".json"))
+					{
+						myLog("2");
+						std::ifstream filereader(result.getFullPathName().toStdString());
+						if (filereader.is_open())
+						{
+							myLog("3");
+							json jsonloader;
+							filereader >> jsonloader;
+							if (jsonloader.find("tileset") != jsonloader.end())
+							{
+								for (int i = 0; i < jsonloader["tileset"].size(); i++)
+								{
+									myLog("test");
+									Tab* tab;
+									Vector2i sizeInTile(std::stoi(jsonloader["tileset"][i]["column"].get<std::string>()),
+									std::stoi(jsonloader["tileset"][i]["row"].get<std::string>()));
+
+									Vector2i imageSize(std::stoi(jsonloader["tileset"][i]["image_height"].get<std::string>()),
+									std::stoi(jsonloader["tileset"][i]["image_width"].get<std::string>()));
+
+									int tile_count = std::stoi(jsonloader["tileset"][i]["tile_count"].get<std::string>());
+
+									Vector2i tileSize(std::stoi(jsonloader["tileset"][i]["tile_height"].get<std::string>()),
+										std::stoi(jsonloader["tileset"][i]["tile_width"].get<std::string>()));
+
+									int spacing = std::stoi(jsonloader["tileset"][i]["spacing"].get<std::string>());
+									int margin = std::stoi(jsonloader["tileset"][i]["margin"].get<std::string>());
+
+									Vector2i tilesetSize(sizeInTile.x * tileSize.x, sizeInTile.y * tileSize.y);
+									String name = jsonloader["tileset"][i]["name"].get<std::string>();
+									String strfile = jsonloader["tileset"][i]["file"].get<std::string>();
+									File file("C:/users/lorence/desktop/" + strfile);
+
+									
+									tab = new TilesetTab(tilesetSize, sizeInTile, tileSize, imageSize, margin, spacing, file, name, 
+										std::bind(&Editor::setCurrentSelectedNode, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+									
+									tilesetContainer.addTab(name, true, tab);
+									
+									
+								}
+							}
+
+
+							Vector2i mapSize(std::stoi(jsonloader["width"].get<std::string>()), std::stoi(jsonloader["height"].get<std::string>()));
+							Vector2i tileSize(std::stoi(jsonloader["tile_width"].get<std::string>()), std::stoi(jsonloader["tile_height"].get<std::string>()));
+							Vector2i sizeInTile(std::stoi(jsonloader["row"].get<std::string>()), std::stoi(jsonloader["column"].get<std::string>()));
+							std::string orientation = jsonloader["orientation"];
+							std::string renderorder = jsonloader["renderorder"];
+							Tab* tab = new EditTab(mapSize, tileSize, result, std::bind(&Editor::fillNode, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3), 
+								orientation, renderorder, sizeInTile, true);
+							
+							mapContainer.addTab(result.getFileNameWithoutExtension(), true, tab);
+
+
+							EditTab* reftab = static_cast<EditTab*>(mapContainer.getTab(mapContainer.get().getCurrentTabIndex()));
+
+
+							std::vector<std::string> tiles = jsonloader["tiles"];
+
+
+							OwnedArray<Tab>& reftilesettabs = tilesetContainer.getTabs();
+							for (int a = 0; a < tiles.size(); a++)
+							{
+								if (tiles[a] == "-1")
+								{
+									reftab->addNode(&EditTab::getDefaultNode());
+								}
+								else
+								{
+									for (int b = 0; b < reftilesettabs.size(); b++)
+									{
+
+										TilesetTab* reftilesettab = static_cast<TilesetTab*>(reftilesettabs[b]);
+										if (std::stoi(tiles[a]) <= reftilesettab->getTileCount())
+										{
+											reftab->addNode(reftilesettab->getNodes()[std::stoi(tiles[a]) - 1]);
+											break;
+										}
+									}
+								}
+							}
+							reftab->resized();
+
+
+							
+						}
+					}
+				}
+			}
 		}
 	}
 private:
@@ -160,14 +241,13 @@ private:
 	std::vector<std::unique_ptr<PopupMenu>> popups;
 	////// end MenuBarModel
 public:
-	Editor(String name, Vector2i size)
+	Editor(String name, Vector2i size) 
 		: BaseWindow(name, size), toolWindow("Editor tools", Vector2i(640, 320)),
 		mapContainer(TabbedButtonBar::TabsAtTop, std::bind(&Editor::editorClose, this, std::placeholders::_1)),
 		tilesetContainer(TabbedButtonBar::TabsAtTop, std::bind(&Editor::tilesetClose, this, std::placeholders::_1)),
 		selectedTile(new Tile()), selectedTool(&default), editorMenuBarComponent(nullptr)
 	{
 		selectedTool->toggle();
-
 
 		toolWindow.setContentNonOwned(&toolContentComponent, false);
 		setContentNonOwned(&editorContentComponent, false);
@@ -178,17 +258,15 @@ public:
 		bucketfiller.setImages(false, true, true, getImageFromFile("Asset/bucketfiller.png"), 1.0f, Colour(), Image(), 1.0f, tWhite, Image(), 1.0f, tGrey);
 		default.setImages(false, true, true, getImageFromFile("Asset/default.png"), 1.0f, Colour(), Image(), 1.0f, tWhite, Image(), 1.0f, tGrey);
 		browseFile.setImages(false, true, true, getImageFromFile("Asset/fileopen.png"), 1.0f, Colour(), Image(), 1.0f, tWhite, Image(), 1.0f, tGrey);
-
-		browseFile.setButtonText("...");
-		eraser.setButtonText("er");
-		bucketfiller.setButtonText("fil");
-		default.setButtonText("def");
+		newTileset.setImages(false, true, true, getImageFromFile("Asset/new.png"), 1.0f, Colour(), Image(), 1.0f, tWhite, Image(), 1.0f, tGrey);
 
 		browseFile.addListener(this);
 		eraser.addListener(this);
 		bucketfiller.addListener(this);
 		default.addListener(this);
+		newTileset.addListener(this);
 
+		addToToolContentComponent(newTileset);
 		addToToolContentComponent(eraser);
 		addToToolContentComponent(bucketfiller);
 		addToToolContentComponent(default);
@@ -203,12 +281,17 @@ public:
 		menus.add("File");
 		
 		file->addItem(1, "New", true, false);
-		file->addItem(2, "Save", true, false);
+		file->addItem(2, "Save", true, true);
+		file->addItem(3, "Open", true, false);
 		
 		popups.push_back(std::move(file));
 
 		editorMenuBarComponent.setModel(this);
 		setMenuBarComponent(&editorMenuBarComponent);
+
+		
+
+		mapContainer.addTab("Virusmon map", true, new EditTab(Vector2i(12,12), Vector2i(32,32), File(), std::bind(&Editor::fillNode, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),"orthogonal","right-bottom"));
 	}
 	~Editor()
 	{
@@ -276,7 +359,6 @@ public:
 	{
 		BaseWindow::resized();
 
-		//mapContainer.setBounds(editorContentComponent.getLocalBounds().removeFromBottom(editorContentComponent.getLocalBounds().getHeight() - toolMenuBarComponent.getHeight()));
 		mapContainer.setBounds(editorContentComponent.getLocalBounds());
 
 		int width = 32;
@@ -290,7 +372,7 @@ public:
 		pos.x += width;
 		bucketfiller.setBounds(pos.x, pos.y, width, height);
 		pos.x = toolBounds.getWidth() / 2;
-		browseFile.setBounds(pos.x, pos.y, width, height);
+		newTileset.setBounds(pos.x, pos.y, width, height);
 	}
 
 	void updatePosition(Vector2i& pos, int width)
@@ -304,33 +386,24 @@ public:
 	}
 	virtual void buttonClicked(Button* button) override
 	{
-		if (button == &browseFile)
+		if (button == &newTileset)
 		{
-			WildcardFileFilter fileFilter("*.jpg, *.png", "TEst", "Texture Image Files");
-
-			FileBrowserComponent fileBrowser(FileBrowserComponent::FileChooserFlags::openMode | FileBrowserComponent::FileChooserFlags::canSelectFiles, File("C:\\Users\\Lorence\\Desktop"), &fileFilter, nullptr);
-			FileChooserDialogBox fileBrowserDialog("Selecte your texture file", "select jpeg or png file", fileBrowser, true, Colour(123, 123, 123));
-
-			if (fileBrowserDialog.show())
+			CreateTilesetTab create;
+			if (openModal(create) == Modal::SUCCESS)
 			{
-				if (fileBrowser.getNumSelectedFiles() > 0)
-				{
-					File file = fileBrowser.getSelectedFile(0);
-				
-					Tab* tab = new TilesetTab(Vector2i(32, 32), file.getFullPathName(),
-						std::bind(&Editor::setCurrentSelectedNode, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-
-					tilesetContainer.addTab(file.getFileNameWithoutExtension(), true, tab);
-				}
+				Tab* tab = new TilesetTab(Vector2i(create.getTileWidth(), create.getTileHeight()), create.getFile(), create.getFileName(),
+					std::bind(&Editor::setCurrentSelectedNode, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3), create.getMargin(), create.getSpacing());
+				tilesetContainer.addTab(create.getFile().getFileNameWithoutExtension(), true, tab);
 			}
 		}
+		
 		else
 		{
 
 			selectedTool->toggle();
 			if (selectedTool != button)
 			{
-				selectedTool = dynamic_cast<ToolButton*>(button);
+				selectedTool = static_cast<ToolButton*>(button);
 			}
 			else
 			{
@@ -392,11 +465,7 @@ public:
 	{
 		if (mouseButton == ModifierKeys::leftButtonModifier)
 		{
-			selectedTile->pointTo(newNode);/*
-										   for (int a = 0; a < selectedTile->getSharedProperties()->getStrProperties().getProperties().size(); a++)
-										   {
-										   myLog(selectedTile->getSharedProperties()->getStrProperties().getProperties()[a].second.toStdString());
-										   }*/
+			selectedTile->pointTo(newNode);
 		}
 		else if (mouseButton == ModifierKeys::rightButtonModifier)
 		{
@@ -419,6 +488,7 @@ private:
 	ToolButton bucketfiller;
 	ToolButton default;
 	ToolButton browseFile;
+	ToolButton newTileset;
 
 	ToolButton* selectedTool;
 	Tile* selectedTile;

@@ -47,10 +47,19 @@ public:
 	{
 		return id != iid;
 	}
+	bool operator >= (T iid)
+	{
+
+	}
+	String toString()
+	{
+		return String(std::to_string(id));
+	}
 private:
 	UID& operator=(UID& newID);
 	T id;
 };
+
 
 typedef UID<int> intUID;
 typedef UID<std::string> strUID;
@@ -65,20 +74,20 @@ public:
 		strProperties.add("ID", std::to_string(iid.getID()));
 		strProperties.add("width", "1");
 		strProperties.add("height", "1");
-		strProperties.setEdited(false);
 		strProperties.setDefaultPropertiesCount(3);
+		strProperties.setEdited(false);
 	}
 	TileType(const TileType& other)
 		: TileType(other.getID(), other.getImage())
 	{
-
+		
 	}
 
 	Properties& getStrProperties() { return strProperties; }
 	const Image& getImage() const { return image; }
-    intUID getID() const { return id; }
+	intUID getID() const { return intUID(std::stoi(strProperties.getProperty(0).toStdString())); }
 private:
-	intUID id;
+	intUID id; // will delete it
 	Image image;
 	Properties strProperties;
 };
@@ -95,6 +104,10 @@ public:
 		: sharedProperties(nullptr)
 	{
 
+	}
+	Tile(Tile* tile)
+	{
+		pointTo(tile);
 	}
 	void pointTo(Tile* tile)
 	{

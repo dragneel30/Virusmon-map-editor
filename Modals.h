@@ -13,7 +13,7 @@
 #include "../JuceLibraryCode/JuceHeader.h"
 
 #include "Vector2.h"
-
+#include "Tool.h"
 class Modal : public Component, public ButtonListener
 {
 public:
@@ -24,7 +24,7 @@ public:
 
 	Modal(Vector2i size)
 	{
-		setSize(300, 300);
+		setSize(size.x, size.y);
 		Rectangle<int> bounds = getLocalBounds();
 		addAndMakeVisible(success);
 		addAndMakeVisible(cancel);
@@ -32,22 +32,28 @@ public:
 		cancel.addListener(this);
 		success.setButtonText("Yes");
 		cancel.setButtonText("No");
-		int height = 32;
-		int halfWidth = getWidth() / 2;
-		success.setBounds(0, getHeight() - height, halfWidth, height);
-		cancel.setBounds(halfWidth, getHeight() - height, halfWidth, height);
+		int height = 16;
+		int width = getWidth() / 2;
+		success.setBounds(0, getHeight() - height, width, height);
+		cancel.setBounds(width, getHeight() - height, width, height);
 	}
 	void buttonClicked(Button* button) override
 	{
 		if (button == &success)
 		{
-			getParentComponent()->exitModalState(SUCCESS);
+			if (isSuccess())
+			{
+				getParentComponent()->exitModalState(SUCCESS);
+			}
 		}
-		else if (button == &cancel)
-		{
-			getParentComponent()->exitModalState(CANCEL);
-		}
+		getParentComponent()->exitModalState(CANCEL);
+		
 	}
+	virtual bool isSuccess()
+	{
+		return true;
+	}
+	
 protected:
 	TextButton success;
 	TextButton cancel;
@@ -73,8 +79,9 @@ private:
 	Label label;
 };
 #include "Util.h"
-class CreateModal : public Modal
+class CreateTabProto : public Modal
 {
+protected:
 	class NumberFilter : public TextEditor::InputFilter
 	{
 	public:
@@ -92,32 +99,24 @@ class CreateModal : public Modal
 		}
 	};
 public:
-	CreateModal()
-		: Modal(Vector2i(100,300 + 32))
+	CreateTabProto(Vector2i size, int componentHeight)
+		: Modal(size)//)
 	{
 
-		filename.setText("Map name:", NotificationType::dontSendNotification);
-		mapWidth.setText("Map Width:", NotificationType::dontSendNotification);
-		mapHeight.setText("Map Height:", NotificationType::dontSendNotification);
-		orientation.setText("Orientation:", NotificationType::dontSendNotification);
-		renderOrder.setText("Render order:", NotificationType::dontSendNotification);
+		filename.setText("Name:", NotificationType::dontSendNotification);
 		tileWidth.setText("Tile Width:", NotificationType::dontSendNotification);
-		tileHeight.setText("Tile Width:", NotificationType::dontSendNotification);
-		renderOrderVal.setText("Bottom right", NotificationType::dontSendNotification);
-		orientationVal.setText("Orthogonal", NotificationType::dontSendNotification);
+		tileHeight.setText("Tile Height:", NotificationType::dontSendNotification);
 
 		txtTileHeight.setInputFilter(&filter, false);
 		txtTileWidth.setInputFilter(&filter, false);
-		txtMapWidth.setInputFilter(&filter, false);
-		txtMapHeight.setInputFilter(&filter, false);
 
-		txtFilename.setText("default");
-		
-		
-		int width = (getWidth())/2;
-		int height = (getHeight() - 32)/7;
 
-		Rectangle<int> bounds = getLocalBounds();
+
+		int width = size.x / 2;
+		int height = componentHeight;
+
+		//Rectangle<int> bounds = getLocalBounds();
+
 
 		txtTileHeight.setBounds(width, success.getY() - height, width, height);
 		tileHeight.setBounds(0, success.getY() - height, width, height);
@@ -126,49 +125,18 @@ public:
 		tileWidth.setBounds(0, txtTileWidth.getY(), width, height);
 
 
-		txtMapHeight.setBounds(width, txtTileWidth.getY() - height, width, height);
-		mapHeight.setBounds(0, txtMapHeight.getY(), width, height);
 
 
-		txtMapWidth.setBounds(width, txtMapHeight.getY() - height, width, height);
-		mapWidth.setBounds(0, txtMapWidth.getY(), width, height);
-
-		renderOrderVal.setBounds(width, txtMapWidth.getY() - height, width, height);
-		renderOrder.setBounds(0, renderOrderVal.getY(), width, height);
-
-		orientationVal.setBounds(width, renderOrderVal.getY() - height, width, height);
-		orientation.setBounds(0, orientationVal.getY(), width, height);
-
-		filename.setBounds(0, orientationVal.getY() - height, width, height);
+		filename.setBounds(0, txtTileWidth.getY() - height, width, height);
 		txtFilename.setBounds(width, filename.getY(), width, height);
 
 		addAndMakeVisible(filename);
 		addAndMakeVisible(txtFilename);
-		addAndMakeVisible(orientation);
-		addAndMakeVisible(orientationVal);
-		addAndMakeVisible(renderOrder);
-		addAndMakeVisible(renderOrderVal);
-		addAndMakeVisible(mapWidth);
-		addAndMakeVisible(txtMapWidth);
-		addAndMakeVisible(mapHeight);
-		addAndMakeVisible(txtMapHeight);
 		addAndMakeVisible(tileWidth);
 		addAndMakeVisible(txtTileWidth);
 		addAndMakeVisible(tileHeight);
 		addAndMakeVisible(txtTileHeight);
 
-	}
-    String getFileName()
-	{
-		return txtFilename.getText();
-	}
-	Vector2i getTileSize()
-	{
-		return Vector2i(std::stoi(txtTileWidth.getText().toStdString()), std::stoi(txtTileHeight.getText().toStdString()));
-	}
-	Vector2i getMapSize()
-	{
-		return Vector2i(std::stoi(txtMapWidth.getText().toStdString()), std::stoi(txtMapHeight.getText().toStdString()));
 	}
 	void buttonClicked(Button* button) override
 	{
@@ -187,22 +155,197 @@ public:
 			getParentComponent()->exitModalState(CANCEL);
 		}
 	}
-private:
+	String getFileName() { return txtFilename.getText(); }
+	int getTileWidth()
+	{
+		return std::stoi(txtTileWidth.getText().toStdString());
+	}
+	int getTileHeight()
+	{
+		return std::stoi(txtTileHeight.getText().toStdString());
+	}
+protected:
 	Label filename;
-	Label mapWidth;
-	Label mapHeight;
-	Label orientation;
-	Label renderOrder;
-	Label tileWidth;
 	Label tileHeight;
+	Label tileWidth;
 
-	Label renderOrderVal;
-	Label orientationVal;
 
 	TextEditor txtTileWidth;
 	TextEditor txtTileHeight;
-	TextEditor txtMapWidth;
-	TextEditor txtMapHeight;
 	TextEditor txtFilename;
 	NumberFilter filter;
+
+
 };
+
+class CreateEditTab : public CreateTabProto
+{
+public:
+	int getColumnCount()
+	{
+		return std::stoi(txtTabColumnCount.getText().toStdString());
+	}
+	int getRowCount()
+	{
+		return std::stoi(txtTabRowCount.getText().toStdString());
+	}
+	CreateEditTab()
+		: CreateTabProto(Vector2i(300, 16 * 8), 16)
+	{
+		orientation.setText("Orientation:", NotificationType::dontSendNotification);
+		renderOrder.setText("Render Order:", NotificationType::dontSendNotification);
+
+		tabRowCount.setText("Tab Width:", NotificationType::dontSendNotification);
+		tabColumnCount.setText("Tab Height:", NotificationType::dontSendNotification);
+
+		int width = 150;
+		int height = 16;
+
+		txtTabColumnCount.setInputFilter(&filter, false);
+		txtTabRowCount.setInputFilter(&filter, false);
+
+
+
+		orientation.setBounds(0, txtFilename.getY() - height, width, height);
+		txtOrientation.setBounds(width, orientation.getY(), width, height);
+
+		renderOrder.setBounds(0, orientation.getY() - height, width, height);
+		txtRenderOrder.setBounds(width, renderOrder.getY(), width, height);
+
+		txtTabRowCount.setBounds(width, renderOrder.getY() - height, width, height);
+		tabRowCount.setBounds(0, txtTabRowCount.getY(), width, height);
+
+
+		txtTabColumnCount.setBounds(width, txtTabRowCount.getY() - height, width, height);
+		tabColumnCount.setBounds(0, txtTabColumnCount.getY(), width, height);
+
+
+		addAndMakeVisible(tabRowCount);
+		addAndMakeVisible(txtTabColumnCount);
+		addAndMakeVisible(tabColumnCount);
+		addAndMakeVisible(txtTabRowCount);
+
+		addAndMakeVisible(orientation);
+		addAndMakeVisible(txtOrientation);
+		addAndMakeVisible(renderOrder);
+		addAndMakeVisible(txtRenderOrder);
+
+	}
+	String getOrientation() { return txtOrientation.getText(); }
+	String getRenderOrder() { return txtRenderOrder.getText(); }
+private:
+	Label tabRowCount;
+	Label tabColumnCount;
+	Label orientation;
+	Label renderOrder;
+
+	TextEditor txtTabColumnCount;
+	TextEditor txtTabRowCount;
+	TextEditor txtRenderOrder;
+	TextEditor txtOrientation;
+};
+
+class CreateTilesetTab : public CreateTabProto
+{
+public:
+	CreateTilesetTab()
+		: CreateTabProto(Vector2i(300 + 32, 16 * 7), 16)
+	{
+		image.setText("Image file:", NotificationType::dontSendNotification);
+		spacing.setText("Spacing:", NotificationType::dontSendNotification);
+		margin.setText("Margin:", NotificationType::dontSendNotification);
+		
+
+		Colour tWhite((uint8)0, (uint8)0, (uint8)0, 0.5f);
+		Colour tGrey((uint8)123, (uint8)123, (uint8)123, 0.5f);
+		browseImage.setImages(false, true, true, getImageFromFile("Asset/fileopen.png"), 1.0f, Colour(), Image(), 1.0f, tWhite, Image(), 1.0f, tGrey);
+
+		int width = 166;
+		int height = 16;
+		int buttonWidth = 32;
+		
+		spacing.setBounds(0, txtFilename.getY() - height, width, height);
+		txtSpacing.setBounds(width, spacing.getY(), width, height);
+
+
+		margin.setBounds(0, spacing.getY() - height, width, height);
+		txtMargin.setBounds(width, margin.getY(), width, height);
+
+		image.setBounds(0, margin.getY() - height, width, height);
+		txtImage.setBounds(width, image.getY(), width - buttonWidth, height);
+
+		browseImage.setBounds(txtImage.getX() + txtImage.getWidth(), txtImage.getY(), buttonWidth, height);
+
+		txtSpacing.setInputFilter(&filter, false);
+		txtMargin.setInputFilter(&filter, false);
+		 
+
+		browseImage.addListener(this);
+
+		addAndMakeVisible(image);
+		addAndMakeVisible(txtImage);
+		addAndMakeVisible(browseImage);
+		addAndMakeVisible(txtSpacing);
+		addAndMakeVisible(txtMargin);
+		addAndMakeVisible(image);
+		addAndMakeVisible(spacing);
+		addAndMakeVisible(margin);
+
+	}
+	void buttonClicked(Button* button) override
+	{
+
+		if (button == &browseImage)
+		{
+			FileChooser file("Open image", File(), "*.png, *.jpeg", false);
+
+			if (file.browseForFileToOpen())
+			{
+				File result = file.getResult();
+				txtImage.setText(result.getFullPathName(), NotificationType::dontSendNotification);
+				txtFilename.setText(result.getFileNameWithoutExtension(), NotificationType::dontSendNotification);
+			
+			}
+		}
+		else
+			Modal::buttonClicked(button);
+	}
+	bool isSuccess() override
+	{
+		if (!File(txtImage.getText()).exists())
+		{
+			WarningModal warning(txtImage.getText() + " doesnt exist!", Vector2i(150, 150));
+			openModal(warning);
+			return false;
+		}
+		
+		return true;
+	}
+	File getFile()
+	{
+		return File(txtImage.getText());
+	}
+	int getSpacing()
+	{
+		return std::stoi(txtSpacing.getText().toStdString());
+	}
+	int getMargin()
+	{
+		return std::stoi(txtMargin.getText().toStdString());
+	}
+private:
+	Label image;
+	Label spacing;
+	Label margin;
+	TextEditor txtImage;
+	TextEditor txtMargin;
+	TextEditor txtSpacing;
+	ToolButton browseImage;
+};
+
+
+
+
+
+
+

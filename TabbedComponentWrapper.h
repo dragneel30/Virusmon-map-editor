@@ -16,7 +16,7 @@ public:
 
 	void addTab(String tabName, bool hasCloseButton, Tab* tab)
 	{
-		std::size_t tabCount = tabsHolder.getNumTabs();
+		std::size_t tabCount = tabsHolder.getNumTabs(); //// get before add tabs so it will become like numTab - 1
 
 		tabs.add(tab);
 
@@ -33,8 +33,9 @@ public:
 			button->setSize(32, 32);
 			button->addListener(this);
 			tabsHolder.getTabbedButtonBar().getTabButton(tabCount)->setExtraComponent(button, TabBarButton::ExtraComponentPlacement::afterText);
+			
 		}
-
+		tabsHolder.setCurrentTabIndex(tabCount);
 	}
 	
 	std::function<bool(Tab*)> closeTabCallbacks;

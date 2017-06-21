@@ -28,10 +28,18 @@ protected:
 class GridTabProto : public Tab
 {
 public:
-	GridTabProto(Vector2i tSize, Vector2i nSize, const File& imageFile, const std::function<void(GridTabProto&, Tile*, ModifierKeys)>& pCallback)
-		: Tab(tSize), nodeSize(nSize), nodeClickCallback(pCallback), file(imageFile), mListener(this)
+	void addNode(Tile* newNode)
+	{
+		Tile* node = new Tile();
+		addAndMakeVisible(node);
+		node->pointTo(newNode);
+		nodes.add(node);
+	}
+	GridTabProto(Vector2i tSize, Vector2i sBaseNodeCount, Vector2i nSize, const File& imageFile, const std::function<void(GridTabProto&, Tile*, ModifierKeys)>& pCallback)
+		: Tab(tSize), nodeSize(nSize), sizeBasedNodeCount(sBaseNodeCount), nodeClickCallback(pCallback), file(imageFile), mListener(this)
 	{
 		addMouseListener(&mListener, true);
+
 		myLog("GridTabProto");
 	}
 	virtual ~GridTabProto()
@@ -43,6 +51,7 @@ public:
 	}
 	void resized() override
 	{
+		myLog("Size: " + std::to_string(nodes.size()));
 		int x = 0, y = 0;
 		for (int a = 0; a < nodes.size(); a++)
 		{
@@ -62,11 +71,16 @@ public:
 		return file;
 	}
     OwnedArray<Tile>& getNodes()  { return nodes; }
+	Vector2i getNodeSize() { return nodeSize; }
+	Vector2i getSizeBasedNodeCount() {
+		return sizeBasedNodeCount;
+	}
 protected:
 	File file;
 	std::function<void(GridTabProto&, Tile*, ModifierKeys)> nodeClickCallback;
 	OwnedArray<Tile> nodes;
 	Vector2i nodeSize;
+	Vector2i sizeBasedNodeCount; 
 	virtual void generateGrid() = 0;
 	class GridTabProtoListener : public MouseListener
 	{
@@ -119,13 +133,21 @@ protected:
 
 class EditTab : public GridTabProto
 {
+	String orientation;
+	String renderOrder;
 public:
 	bool isSaved() { return saved; }
-	bool setSave(bool save) { saved = save; }
-	EditTab(Vector2i tSize, Vector2i nSize, const File& file, const std::function<void(GridTabProto&, Tile*, ModifierKeys)>& pCallback)
-		: GridTabProto(Vector2i(tSize.x * nSize.x, tSize.y * nSize.y), nSize, file, pCallback), saved(false)
+	void setSave(bool save) { saved = save; }
+	EditTab(Vector2i sizeInTile, Vector2i nSize, const File& file, const std::function<void(GridTabProto&, Tile*, ModifierKeys)>& pCallback, String pOrientation, String pRenderOrder)
+		:	EditTab(Vector2i(sizeInTile.x * nSize.x, sizeInTile.y * nSize.y), nSize, file, pCallback, pOrientation, pRenderOrder, sizeInTile, false)
 	{
 		generateGrid();
+	}
+
+	EditTab(Vector2i tSize, Vector2i nSize, const File& file, const std::function<void(GridTabProto&, Tile*, ModifierKeys)>& pCallback, String pOrientation, String pRenderOrder, Vector2i sizeInTile, bool pSave)
+		: GridTabProto(tSize, sizeInTile, nSize, file, pCallback), orientation(pOrientation), renderOrder(pRenderOrder), saved(pSave)
+	{
+
 	}
 	virtual ~EditTab()
 	{
@@ -153,64 +175,83 @@ public:
 	{
 		tile->pointTo(&getDefaultNode());
 	}
-private:
+	String getOrientation() { return orientation; }
+	String getRenderOrder() { return renderOrder; }
 	static Tile& getDefaultNode()
 	{
 		static Tile defaultTile(std::make_shared<TileType>(intUID(-1), getImageFromFile("Asset/defaultNodeImage.png")));
 		return defaultTile;
 	}
+private:
 	bool saved;
 };
 
 class TilesetTab : public GridTabProto
 {
+	Vector2i imageSize;
+	int margin;
+	int spacing;
+	String name;
 public:
-	
-	TilesetTab(Vector2i nSize, const File& pfile, const std::function<void(GridTabProto&, Tile*, ModifierKeys)>& pCallback)
-		: GridTabProto(loadAndCalculateGridSize(pfile, nSize), nSize, pfile, pCallback)
+	Vector2i getImageSize() { return imageSize; }
+	int getMargin() { return margin; }
+	int getSpacing() { return spacing; }
+	int getTileCount() { return nodes.size(); }
+	String getName() { return name; }
+	TilesetTab(Vector2i nSize, const File& pfile, const String& name, const std::function<void(GridTabProto&, Tile*, ModifierKeys)>& pCallback, int pMargin, int pSpacing)
+		: TilesetTab(calculateGridSize(pfile, pMargin, pSpacing, nSize), Vector2i(), nSize, Vector2i(), pMargin, pSpacing, pfile, name, pCallback)
 	{
 
-		generateGrid();
-	}	
+		sizeBasedNodeCount = Vector2i(getWidth() / nSize.x, getHeight() / nSize.y);
 
+	}
+
+	TilesetTab(Vector2i tSize, Vector2i sizeInTile, Vector2i nSize, Vector2i pImageSize, int pMargin, int pSpacing, const File& pFile, const String& pName, const std::function<void(GridTabProto&, Tile*, ModifierKeys)>& pCallback)
+		: GridTabProto(tSize, sizeInTile, nSize, pFile, pCallback), imageSize(pImageSize), margin(pMargin), spacing(pSpacing), name(pName)
+	{
+		generateGrid();
+	}
 	virtual ~TilesetTab()
 	{
 	}
-	Vector2i loadAndCalculateGridSize(const File& pfile, Vector2i nSize)
+	Vector2i calculateGridSize(const File& pfile, int margin, int spacing, Vector2i nodeSize)
 	{
 		Image image = ImageFileFormat::loadFrom(pfile);
-	    // had to do this because if i make it a member then ill be using uninitialized pointer when loadAndCalculateGridSize() used it (ie its internal pointer)
-		Vector2i gridSize(image.getWidth() - (image.getWidth()/ nSize.x), image.getHeight() - (image.getHeight()/ nSize.y));
-		myLog("gridsize");
-		myLog(gridSize.x);
-		myLog(gridSize.y);
-		return gridSize;
+	    // had to do this because if i make it a member then ill be using uninitialized pointer when calculateGridSize() used it (ie its internal pointer)
+		int offset = margin + spacing;
+	    Vector2i size(image.getWidth() - offset, image.getHeight() - offset);
+		size.x -= (size.x % nodeSize.x);
+		size.y -= (size.y % nodeSize.y);
+		return size;
+		
 	}
 	virtual void generateGrid() override
 	{
 		Image image = ImageFileFormat::loadFrom(file);
-		// had to do this because when i make it a member then ill be using uninitialized pointer when loadAndCalculateGridSize() used it (ie its internal pointer)
-
+		// had to do this because when i make it a member then ill be using uninitialized pointer when calculateGridSize() used it (ie its internal pointer)
 		int width = getWidth() / nodeSize.x;
 		int height = getHeight() / nodeSize.y;
-		//myLog(width);
-		//myLog(height);
+		imageSize = Vector2i(image.getWidth(), image.getHeight());
 		intUID id = 1;
-		int lineHeight = 0;
+		int spaceHeight = margin;
 		for (int lHeight = 0; lHeight < height; lHeight++)
 		{
-			int lineWidth = 0;
+			int spaceWidth = margin;
 			for (int lWidth = 0; lWidth < width; lWidth++)
 			{
-				Rectangle<int> bounds((lWidth * 32) + lineWidth++, (lHeight * 32) + lineHeight, 32, 32);
+				Rectangle<int> bounds((lWidth * nodeSize.x) + spaceWidth, (lHeight * nodeSize.y) + spaceHeight, nodeSize.x, nodeSize.y);
 				nodes.add(new Tile(std::make_shared<TileType>(id++, image.getClippedImage(Rectangle<int>(bounds)))));
 				addAndMakeVisible(nodes[nodes.size() - 1]);
+				spaceWidth += spacing;
 			}
-			lineHeight++;
+			spaceHeight += spacing;
 		}
 		resized();
 	}
-
+	intUID getLastID()
+	{
+		return nodes[nodes.size() - 1]->getSharedProperties()->getID();
+	}
 private:
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(TilesetTab)
 };

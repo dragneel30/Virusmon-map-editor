@@ -12,10 +12,31 @@
 #include "../JuceLibraryCode/JuceHeader.h"
 #include <vector>
 #include "PropertiesWindow.h"
+#include <algorithm>
+struct Property
+{
+public:
+	Property() {}
+	Property(String ikey, String ivalue)
+		: key(ikey), value(ivalue)
+	{
+
+	}
+	bool operator==(const Property& okey) const // key comparison
+	{
+		return okey.key == key;
+	}
+	bool operator!=(Property other)
+	{
+		return other.key != key || other.value != value;
+	}
+	String key;
+	String value;
+};
 class PropertiesModal : public Modal
 {
 public:
-	PropertiesModal(std::pair<String, String> pair = std::pair<String, String>())
+	PropertiesModal(Property pair = Property())
 		: Modal(Vector2i(200, 96))
 	{
 		setSize(200, 96);
@@ -28,11 +49,11 @@ public:
 		value.setText("Value: ", NotificationType::dontSendNotification);
 		success.setButtonText("Save");
 		cancel.setButtonText("Cancel");
-		if (pair != std::pair<String, String>())
+		if (pair != Property())
 		{
-			myLog(pair.first.toStdString());
-			txtProperty.setText(pair.first);
-			txtValue.setText(pair.second);
+			myLog(pair.key.toStdString());
+			txtProperty.setText(pair.key);
+			txtValue.setText(pair.value);
 			txtProperty.setEnabled(false);
 		}
 
@@ -47,9 +68,9 @@ public:
 	}
 
 
-	std::pair<String, String> get()
+	Property get()
 	{
-		return std::make_pair(txtProperty.getText(), txtValue.getText());
+		return Property(txtProperty.getText(), txtValue.getText());
 	}
 	Label property;
 	Label value;
@@ -68,19 +89,36 @@ public:
 
 	void add(std::string property, std::string value)
 	{
-		add(std::make_pair(property, value));
+		add(Property(property, value));
 	}
-	void add(std::pair<String, String> property)
+	void add(Property property)
 	{
 		strProperties.push_back(property);
 		setEdited(true);
 	}
-
-	std::vector<std::pair<String, String>>& get()
+	String getProperty(int index) const
+	{
+		if (strProperties.size() > 0)
+		{
+			return strProperties[index].value;
+		}
+		return "";
+	}
+	String getProperty(String key) const
+	{
+		
+		std::vector<Property>::const_iterator e = std::find(strProperties.begin(), strProperties.end(), Property(key, ""));
+		if (e != strProperties.end())
+		{
+			return e->value;
+		}
+		return "";
+	}
+	std::vector<Property>& get()
 	{
 		return strProperties;
 	}
-	const std::vector<std::pair<String, String>>& getProperties()
+	const std::vector<Property>& getProperties()
 	{
 		return strProperties;
 	}
@@ -89,7 +127,7 @@ public:
 	{
 		return strProperties.size();
 	}
-
+	
 	void setEdited(bool pEdited) { edited = pEdited; }
 	bool isEdited() const { return edited; }
 	int getDefaultPropertiesCount() const { return defaultPropertiesCount; }
@@ -98,8 +136,7 @@ private:
 	bool edited;
 	int defaultPropertiesCount;
 	static PropertiesWindow* window;
-	std::vector<std::pair<String, String>> strProperties;
-	
+	std::vector<Property> strProperties;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Properties)
 };
 
@@ -162,7 +199,7 @@ public:
 				PropertiesModal editmodal(model.getRow(selectedRow));
 				if (openModal(editmodal) == 69)
 				{
-					model.editValue(selectedRow, editmodal.get().second);
+					model.editValue(selectedRow, editmodal.get().value);
 					table.repaintRow(selectedRow);
 				}
 
@@ -217,15 +254,15 @@ private:
 		{
 			properties.get().erase(properties.get().cbegin() + i);
 		}
-		std::pair<String, String> getRow(int i) { if (i < getNumRows()) { return properties.get()[i]; } return std::pair<String, String>(); }
-		void editValue(int rowNumber, String value) { properties.get()[rowNumber].second = value; }
-		bool addRow(std::pair<String, String> property)
+		Property getRow(int i) { if (i < getNumRows()) return properties.get()[i]; return Property(); }
+		void editValue(int rowNumber, String value) { properties.get()[rowNumber].key = value; }
+		bool addRow(Property property)
 		{
 			for (int a = 0; a < getNumRows(); a++)
 			{
-				if (property.first == properties.get()[a].first)
+				if (property.key == properties.get()[a].key)
 				{
-					editValue(a, property.second);
+					editValue(a, property.value);
 					lastUpdate = a;
 					return false;
 				}
@@ -235,7 +272,7 @@ private:
 			return true;
 		}
 		void clearRow() { properties.get().clear(); }
-		const std::vector<std::pair<String, String>>& getRows() { return properties.get(); }
+		const std::vector<Property>& getRows() { return properties.get(); }
 		virtual int getNumRows() override
 		{
 
@@ -253,11 +290,11 @@ private:
 				g.setColour(Colours::white);
 				if (columnId == 1)
 				{
-					g.drawText(properties.get()[rowNumber].first, 0, 0, width, height, Justification::centredLeft);
+					g.drawText(properties.get()[rowNumber].key, 0, 0, width, height, Justification::centredLeft);
 				}
 				else if (columnId == 2)
 				{
-					g.drawText(properties.get()[rowNumber].second, 0, 0, width, height, Justification::centredLeft);
+					g.drawText(properties.get()[rowNumber].value, 0, 0, width, height, Justification::centredLeft);
 				}
 			}
 		}
