@@ -12,6 +12,44 @@
 #include "PropertiesWindow.h"
 #include <fstream>
 using json = nlohmann::json;
+class MenuModel : public MenuBarModel
+{
+public:
+	MenuModel()
+		: MenuBarModel()
+	{
+
+	}
+	virtual StringArray getMenuBarNames()
+	{
+		return menus;
+	}
+
+	virtual PopupMenu getMenuForIndex(int topLevelMenuIndex,
+		const String& menuName)
+	{
+		return *popups[topLevelMenuIndex];
+	}
+	
+
+	virtual void menuItemSelected(int menuItemID, int topLevelMenuIndex)
+	{
+	}
+private:
+	StringArray menus;
+	std::vector<std::unique_ptr<PopupMenu>> popups;
+	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MenuModel)
+};
+class ToolWindow : public BaseWindow
+{
+public:
+	ToolWindow(const String& name, Vector2i size)
+		: BaseWindow(name, size) {}
+	void closeButtonPressed() override
+	{
+		setVisible(false);
+	}
+};
 class Editor : public BaseWindow, public ButtonListener, public MenuBarModel
 {
 
@@ -245,12 +283,12 @@ public:
 		: BaseWindow(name, size), toolWindow("Editor tools", Vector2i(640, 320)),
 		mapContainer(TabbedButtonBar::TabsAtTop, std::bind(&Editor::editorClose, this, std::placeholders::_1)),
 		tilesetContainer(TabbedButtonBar::TabsAtTop, std::bind(&Editor::tilesetClose, this, std::placeholders::_1)),
-		selectedTile(new Tile()), selectedTool(&default), editorMenuBarComponent(nullptr)
+		selectedTile(new Tile()), selectedTool(&default), editorMenuBarComponent(new MenuBarComponent(nullptr))
 	{
 		selectedTool->toggle();
 
-		toolWindow.setContentNonOwned(&toolContentComponent, false);
-		setContentNonOwned(&editorContentComponent, false);
+		toolWindow.setContentOwned(&toolContentComponent, false);
+		setContentOwned(&editorContentComponent, false);
 
 		Colour tWhite((uint8)0, (uint8)0, (uint8)0, 0.5f);
 		Colour tGrey((uint8)123, (uint8)123, (uint8)123, 0.5f);
@@ -281,13 +319,13 @@ public:
 		menus.add("File");
 		
 		file->addItem(1, "New", true, false);
-		file->addItem(2, "Save", true, true);
+		file->addItem(2, "Save", true, false);
 		file->addItem(3, "Open", true, false);
 		
 		popups.push_back(std::move(file));
 
-		editorMenuBarComponent.setModel(this);
-		setMenuBarComponent(&editorMenuBarComponent);
+		editorMenuBarComponent->setModel(this);
+		setMenuBarComponent(editorMenuBarComponent);
 
 		
 
@@ -295,8 +333,13 @@ public:
 	}
 	~Editor()
 	{
-		selectedTool = nullptr;
-		selectedTile = nullptr;
+		setMenuBarComponent(nullptr);
+		browseFile.removeListener(this);
+		eraser.removeListener(this);
+		bucketfiller.removeListener(this);
+		default.removeListener(this);
+		newTileset.removeListener(this);
+		delete selectedTile;
 	}
 
 
@@ -441,14 +484,14 @@ public:
 					}
 					else if (selectedTool == &eraser)
 					{
-						EditTab& refCurrentTab = dynamic_cast<EditTab&>(currentTab);
+						EditTab& refCurrentTab = static_cast<EditTab&>(currentTab);
 						refCurrentTab.erase(selectedNode);
 					}
 					else if (selectedTool == &bucketfiller)
 					{
 						if (selectedTile != nullptr)
 						{
-							EditTab& refCurrentTab = dynamic_cast<EditTab&>(currentTab);
+							EditTab& refCurrentTab = static_cast<EditTab&>(currentTab);
 							refCurrentTab.fill(*selectedTile);
 						}
 					}
@@ -475,14 +518,14 @@ public:
 
 private:
 
-	BaseWindow toolWindow;
+	MenuBarComponent* editorMenuBarComponent;
+	ToolWindow toolWindow;
 	Component toolContentComponent;
 	Component editorContentComponent;
 
 	TabbedComponentWrapper mapContainer;
 	TabbedComponentWrapper tilesetContainer;
 
-	MenuBarComponent editorMenuBarComponent;
 
 	ToolButton eraser;
 	ToolButton bucketfiller;
