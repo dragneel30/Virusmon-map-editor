@@ -94,11 +94,9 @@ I'm currently developing this map editor at the same time learning JUCE so this 
 
 -modal windows added (modal window for map creation, tileset loading)
 
+<b>New update: 06/22/2017</b>
 
-
-
-
-
+-fix memory leak and dangling pointer
 
 
    
