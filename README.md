@@ -30,6 +30,7 @@ I'm currently developing this map editor at the same time learning JUCE so this 
 
 -Can now edit a map.
 
+
 <b>New update: 05/18/2017 (almost all code has been rewritten)</b>
 
 -Whole UI has been changed
@@ -86,6 +87,16 @@ I'm currently developing this map editor at the same time learning JUCE so this 
 -almost all codes has been refactored
 
 -changed json format
+
+<b>New update: 06/21/2017</b>
+
+-can now load maps from json files.
+
+-modal windows added (modal window for map creation, tileset loading)
+
+
+
+
 
 
 
