@@ -3,20 +3,13 @@ A map editor I'm working on for a mobile game for college project
 
 "Virusmon" is an undecided name. 
 
-I'm using JUCE library for this. 
-
 JUCE is an open-source cross-platform C++ application framework, used for the development of desktop and mobile applications. JUCE is used in particular for its GUI and plug-ins libraries.
-
-I'm currently developing this map editor at the same time learning JUCE so this will be a slow development.
-
 
 <b>Legend:</b>
 
 ![alt text](http://i.imgur.com/3vZfR47.png) list
 
-
 ![alt text](http://i.imgur.com/DB79uf1.png) sub-list
-
 
 <b>Initial progress: 04/(forgot the exact day)/17</b>
 
@@ -29,7 +22,6 @@ I'm currently developing this map editor at the same time learning JUCE so this 
 <b>New update: 05/12/17</b>
 
 -Can now edit a map.
-
 
 <b>New update: 05/18/2017 (almost all code has been rewritten)</b>
 
@@ -97,7 +89,3 @@ I'm currently developing this map editor at the same time learning JUCE so this 
 <b>New update: 06/22/2017</b>
 
 -fixed memory leaks
-
-
-   
-     
