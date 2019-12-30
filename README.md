@@ -5,12 +5,6 @@ A map editor I'm working on for a mobile game for college project
 
 JUCE is an open-source cross-platform C++ application framework, used for the development of desktop and mobile applications. JUCE is used in particular for its GUI and plug-ins libraries.
 
-<b>Legend:</b>
-
-![alt text](http://i.imgur.com/3vZfR47.png) list
-
-![alt text](http://i.imgur.com/DB79uf1.png) sub-list
-
 <b>Initial progress: 04/(forgot the exact day)/17</b>
 
 -Most are UI of the editor.
